@@ -5,5 +5,6 @@ contextBridge.exposeInMainWorld('api', {
   onAuthExpired: (callback) => ipcRenderer.on('auth-expired', () => callback()),
   requestRefresh: () => ipcRenderer.send('request-refresh'),
   openTokenEntry: () => ipcRenderer.send('open-token-entry'),
-  saveToken: (subscriberID, token) => ipcRenderer.send('save-token', { subscriberID, token })
+  saveToken: (subscriberID, token) => ipcRenderer.send('save-token', { subscriberID, token }),
+  logout: () => ipcRenderer.send('logout')
 });

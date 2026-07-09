@@ -360,3 +360,17 @@ ipcMain.on('save-token', (event, { subscriberID, token }) => {
   
   fetchUsage();
 });
+
+ipcMain.on('logout', async () => {
+  store.delete('subscriberID');
+  store.delete('headers');
+  loadConfig();
+  
+  const { session } = require('electron');
+  await session.defaultSession.clearStorageData();
+  
+  authExpired = true;
+  if (mainWindow) {
+    mainWindow.webContents.send('auth-expired');
+  }
+});

@@ -56,11 +56,7 @@ function attemptHiddenRefresh() {
 }
 
 // Alert state memory
-let alertState = {
-  standard: { notifiedWarn: false, notifiedCritical: false, lastTotal: 0 },
-  bonus: { notifiedWarn: false, notifiedCritical: false, lastTotal: 0 },
-  vas: { notifiedWarn: false, notifiedCritical: false, lastTotal: 0 }
-};
+let alertState = {};
 
 const sltAutoLauncher = new AutoLaunch({
   name: 'SLT Usage Widget',
@@ -89,10 +85,11 @@ function updateAutoLaunch() {
 function checkAlerts(category, usageData) {
   if (!usageData || usageData.total === 0) return;
   
-  const { used, total } = usageData;
-  const remaining = total - used;
-  const percent = (remaining / total) * 100;
+  const { remaining, total, percent } = usageData;
   
+  if (!alertState[category]) {
+    alertState[category] = { notifiedWarn: false, notifiedCritical: false, lastTotal: 0 };
+  }
   let state = alertState[category];
   
   // Reset if total limits changed (new cycle)
@@ -102,12 +99,10 @@ function checkAlerts(category, usageData) {
     state.lastTotal = total;
   }
 
-  const catName = category.charAt(0).toUpperCase() + category.slice(1);
-
   if (percent <= config.criticalThresholdPercent && !state.notifiedCritical) {
     new Notification({
       title: 'SLT Usage Critical',
-      body: `${catName} data is below ${config.criticalThresholdPercent}%. Only ${remaining.toFixed(1)}GB left.`,
+      body: `${category} data is below ${config.criticalThresholdPercent}%. Only ${remaining.toFixed(1)}GB left.`,
       urgency: 'critical'
     }).show();
     state.notifiedCritical = true;
@@ -115,7 +110,7 @@ function checkAlerts(category, usageData) {
   } else if (percent <= config.warnThresholdPercent && !state.notifiedWarn) {
     new Notification({
       title: 'SLT Usage Warning',
-      body: `${catName} data is below ${config.warnThresholdPercent}%. ${remaining.toFixed(1)}GB remaining.`,
+      body: `${category} data is below ${config.warnThresholdPercent}%. ${remaining.toFixed(1)}GB remaining.`,
       urgency: 'normal'
     }).show();
     state.notifiedWarn = true;
@@ -130,10 +125,19 @@ async function fetchUsage() {
   }
   
   try {
-    const url = `https://omniscapp.slt.lk/slt/ext/api/BBVAS/UsageSummary?subscriberID=${config.subscriberID}`;
+    const url = `https://omniscapp.slt.lk/slt/ext/api/BBVAS/UsageSummary?subscriberID=${config.subscriberID}&_t=${Date.now()}`;
+    
+    const fetchHeaders = {
+      ...config.headers,
+      'Cache-Control': 'no-cache, no-store, must-revalidate',
+      'Pragma': 'no-cache',
+      'Expires': '0'
+    };
+
     const response = await fetch(url, {
       method: 'GET',
-      headers: config.headers
+      headers: fetchHeaders,
+      cache: 'no-store'
     });
 
     if (response.status === 401) {
@@ -152,11 +156,43 @@ async function fetchUsage() {
     
     if (data && data.dataBundle) {
       const bundle = data.dataBundle;
-      const parseUsage = (summary) => summary ? { used: parseFloat(summary.used), total: parseFloat(summary.limit) } : null;
+      
+      if (bundle.my_package_info && bundle.my_package_info.usageDetails) {
+        bundle.my_package_info.usageDetails.forEach((detail) => {
+          let detailName = detail.name;
+          if (detailName === 'Total (Standard + Free)') {
+            detailName = 'Total';
+          }
+          checkAlerts(detailName, {
+            remaining: parseFloat(detail.remaining || 0),
+            total: parseFloat(detail.limit || 0),
+            percent: parseFloat(detail.percentage || 0)
+          });
+        });
+      }
 
-      checkAlerts('standard', parseUsage(bundle.my_package_summary));
-      checkAlerts('bonus', parseUsage(bundle.bonus_data_summary));
-      checkAlerts('vas', parseUsage(bundle.vas_data_summary));
+      const summaryKeys = ['bonus_data_summary', 'free_data_summary', 'vas_data_summary', 'extra_gb_data_summary'];
+      summaryKeys.forEach(key => {
+        const summary = bundle[key];
+        if (summary && summary.limit !== undefined && summary.used !== undefined) {
+          const name = key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()).replace(' Summary', '');
+          const limit = parseFloat(summary.limit || 0);
+          const used = parseFloat(summary.used || 0);
+          let remaining = limit - used;
+          let percent = limit > 0 ? (remaining / limit) * 100 : 0;
+          
+          if (remaining < 0) {
+            remaining = 0;
+            percent = 0;
+          }
+          
+          checkAlerts(name, {
+            remaining,
+            total: limit,
+            percent
+          });
+        }
+      });
     }
     
     if (mainWindow) {
@@ -221,8 +257,9 @@ function createWindow() {
   updateAutoLaunch();
 
   const { width: screenWidth } = screen.getPrimaryDisplay().workAreaSize;
-  const windowWidth = 320;
-  const windowHeight = 420;
+  const windowWidth = store.get('windowWidth', 320);
+  const windowHeight = store.get('windowHeight', 420);
+  const isAlwaysOnTop = store.get('alwaysOnTop', true);
 
   mainWindow = new BrowserWindow({
     width: windowWidth,
@@ -231,9 +268,11 @@ function createWindow() {
     y: 30,
     frame: false,
     transparent: true,
-    alwaysOnTop: true,
+    alwaysOnTop: isAlwaysOnTop,
     skipTaskbar: true,
-    resizable: false,
+    resizable: true,
+    minWidth: 320,
+    minHeight: 180,
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
@@ -243,6 +282,16 @@ function createWindow() {
 
   mainWindow.setVisibleOnAllWorkspaces(true);
   mainWindow.loadFile('index.html');
+  
+  mainWindow.on('resize', () => {
+    if (!isProgrammaticResize) {
+      const [width, height] = mainWindow.getSize();
+      store.set('windowWidth', width);
+      store.set('windowHeight', height);
+      store.set('autoResize', false);
+      mainWindow.webContents.send('setting-updated', { key: 'autoResize', value: false });
+    }
+  });
   
   startPolling();
 }
@@ -359,4 +408,61 @@ ipcMain.on('save-token', (event, { subscriberID, token }) => {
   if (tokenWindow) tokenWindow.close();
   
   fetchUsage();
+});
+
+ipcMain.on('logout', async () => {
+  store.delete('subscriberID');
+  store.delete('headers');
+  loadConfig();
+  
+  const { session } = require('electron');
+  await session.defaultSession.clearStorageData();
+  
+  authExpired = true;
+  if (mainWindow) {
+    mainWindow.webContents.send('auth-expired');
+  }
+});
+
+ipcMain.handle('get-config', () => {
+  return {
+    refreshMinutes: store.get('refreshMinutes', 5),
+    alwaysOnTop: store.get('alwaysOnTop', true),
+    theme: store.get('theme', 'dark'),
+    chartMode: store.get('chartMode', 'bar'),
+    chartOrder: store.get('chartOrder', []),
+    hiddenCharts: store.get('hiddenCharts', []),
+    autoResize: store.get('autoResize', true)
+  };
+});
+
+let isProgrammaticResize = false;
+
+ipcMain.on('resize-window', (event, { width, height }) => {
+  if (mainWindow) {
+    const { screen } = require('electron');
+    const { height: screenHeight } = screen.getPrimaryDisplay().workAreaSize;
+    let finalHeight = Math.min(height, screenHeight - 60);
+    
+    // Preserve the user's customized width instead of snapping back to 320
+    const [currentWidth, currentHeight] = mainWindow.getSize();
+    // Only resize if height is different to prevent flickering
+    if (currentHeight !== finalHeight) {
+      isProgrammaticResize = true;
+      mainWindow.setSize(currentWidth, finalHeight, false);
+      setTimeout(() => { isProgrammaticResize = false; }, 200);
+    }
+  }
+});
+
+ipcMain.on('update-setting', (event, { key, value }) => {
+  store.set(key, value);
+  loadConfig();
+  
+  if (key === 'alwaysOnTop' && mainWindow) {
+    mainWindow.setAlwaysOnTop(value);
+  }
+  if (key === 'refreshMinutes') {
+    startPolling();
+  }
 });

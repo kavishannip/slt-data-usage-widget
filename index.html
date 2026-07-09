@@ -6,22 +6,50 @@
     <title>SLT Usage Widget</title>
     <style>
       :root {
+        --color-green: #10b981;
+        --color-amber: #f59e0b;
+        --color-red: #ef4444;
+        --radius: 16px;
+      }
+      
+      [data-theme="dark"], :root {
         --bg-glass: rgba(20, 20, 25, 0.75);
         --border-glass: rgba(255, 255, 255, 0.1);
         --text-main: #f0f0f0;
         --text-muted: #a0a0a5;
-
-        --color-green: #10b981;
-        --color-amber: #f59e0b;
-        --color-red: #ef4444;
-
-        --radius: 16px;
+        --popup-bg: rgba(30, 30, 35, 0.95);
+        --card-bg: rgba(0, 0, 0, 0.2);
+        --input-bg: rgba(0, 0, 0, 0.3);
+      }
+      
+      [data-theme="light"] {
+        --bg-glass: rgba(255, 255, 255, 0.75);
+        --border-glass: rgba(0, 0, 0, 0.1);
+        --text-main: #1f2937;
+        --text-muted: #4b5563;
+        --popup-bg: rgba(240, 240, 245, 0.95);
+        --card-bg: rgba(255, 255, 255, 0.4);
+        --input-bg: rgba(255, 255, 255, 0.5);
+      }
+      
+      [data-theme="blue"] {
+        --bg-glass: rgba(15, 23, 42, 0.75);
+        --border-glass: rgba(56, 189, 248, 0.2);
+        --text-main: #f8fafc;
+        --text-muted: #94a3b8;
+        --popup-bg: rgba(15, 23, 42, 0.95);
+        --card-bg: rgba(30, 41, 59, 0.5);
+        --input-bg: rgba(30, 41, 59, 0.7);
       }
 
       * {
         box-sizing: border-box;
         margin: 0;
         padding: 0;
+      }
+
+      html, body {
+        height: 100%;
       }
 
       body {
@@ -45,7 +73,8 @@
         display: flex;
         flex-direction: column;
         gap: 12px;
-        height: 100vh;
+        height: 100%;
+        position: relative;
       }
 
       .header {
@@ -83,14 +112,101 @@
         background: rgba(255, 255, 255, 0.1);
         color: var(--text-main);
       }
+      
+      #cards-container {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        overflow: hidden;
+      }
+      
+      #cards-container.pie-mode {
+        flex-direction: row;
+        flex-wrap: wrap;
+        justify-content: space-evenly;
+        gap: 16px;
+      }
+      
+      #cards-container::-webkit-scrollbar {
+        width: 4px;
+      }
+      
+      #cards-container::-webkit-scrollbar-thumb {
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 4px;
+      }
 
       .usage-card {
-        background: rgba(0, 0, 0, 0.2);
+        background: var(--card-bg);
         border-radius: 8px;
         padding: 10px 12px;
         display: flex;
         flex-direction: column;
         gap: 8px;
+        flex-shrink: 0;
+        cursor: grab;
+        position: relative;
+      }
+      
+      .usage-card.pie-card {
+        width: 120px;
+        align-items: center;
+        gap: 4px;
+      }
+      
+      .usage-card.dragging {
+        opacity: 0.5;
+        cursor: grabbing;
+      }
+      
+      .hide-btn {
+        position: absolute;
+        top: 2px;
+        right: 4px;
+        background: transparent;
+        border: none;
+        color: var(--text-muted);
+        cursor: pointer;
+        opacity: 0;
+        transition: opacity 0.2s;
+        font-size: 10px;
+      }
+      .usage-card:hover .hide-btn {
+        opacity: 1;
+      }
+      .hide-btn:hover {
+        color: var(--color-red);
+      }
+      
+      .pie-chart {
+        width: 70px;
+        height: 70px;
+        position: relative;
+      }
+      .pie-svg {
+        transform: rotate(-90deg);
+        width: 100%;
+        height: 100%;
+      }
+      .pie-bg {
+        fill: none;
+        stroke: rgba(255, 255, 255, 0.05);
+        stroke-width: 4;
+      }
+      .pie-fill {
+        fill: none;
+        stroke-width: 4;
+        stroke-linecap: round;
+        transition: stroke-dasharray 1s ease-out;
+      }
+      .pie-text {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        font-size: 12px;
+        font-weight: 600;
+        font-family: monospace;
       }
 
       .card-header {
@@ -130,96 +246,255 @@
         margin-top: auto;
       }
 
-      .auth-banner {
+      .auth-state {
         display: none;
-        background: rgba(239, 68, 68, 0.2);
-        border: 1px solid rgba(239, 68, 68, 0.4);
-        color: #fca5a5;
-        padding: 10px;
-        border-radius: 8px;
-        text-align: center;
-        font-size: 12px;
-        cursor: pointer;
-        -webkit-app-region: no-drag;
-        transition: background 0.2s;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 100%;
+        -webkit-app-region: drag;
       }
 
-      .auth-banner:hover {
-        background: rgba(239, 68, 68, 0.3);
+      body.logged-out .auth-state {
+        display: flex;
+      }
+      
+      body.logged-out #settings-btn,
+      body.logged-out #refresh-btn,
+      body.logged-out #cards-container,
+      body.logged-out #footer-text {
+        display: none;
+      }
+
+      .login-btn {
+        background: var(--color-green);
+        color: #fff;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 8px;
+        font-weight: 600;
+        cursor: pointer;
+        margin-top: 16px;
+        transition: background 0.2s;
+        -webkit-app-region: no-drag;
+      }
+      
+      .login-btn:hover {
+        background: #059669;
       }
 
       .show {
         display: block;
+      }
+
+      .settings-popup {
+        display: none;
+        position: absolute;
+        top: 50px;
+        right: 16px;
+        background: var(--popup-bg);
+        border: 1px solid var(--border-glass);
+        border-radius: 8px;
+        padding: 12px;
+        width: 200px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+        z-index: 10;
+        -webkit-app-region: no-drag;
+      }
+      
+      .settings-section {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 12px;
+        font-size: 12px;
+        color: var(--text-muted);
+      }
+      
+      .settings-section input[type="number"] {
+        width: 45px;
+        background: var(--input-bg);
+        border: 1px solid var(--border-glass);
+        color: var(--text-main);
+        padding: 4px;
+        border-radius: 4px;
+        font-size: 11px;
+        text-align: right;
+      }
+      
+      .theme-select {
+        background: var(--input-bg);
+        border: 1px solid var(--border-glass);
+        color: var(--text-main);
+        padding: 4px;
+        border-radius: 4px;
+        font-size: 11px;
+        width: 90px;
+        cursor: pointer;
+        outline: none;
+      }
+      
+      .theme-select option {
+        background: var(--popup-bg);
+        color: var(--text-main);
+      }
+      
+      .settings-divider {
+        height: 1px;
+        background: var(--border-glass);
+        margin: 12px 0;
+      }
+      
+      .switch {
+        position: relative;
+        display: inline-block;
+        width: 32px;
+        height: 18px;
+      }
+      .switch input { 
+        opacity: 0;
+        width: 0;
+        height: 0;
+      }
+      .slider {
+        position: absolute;
+        cursor: pointer;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background-color: rgba(255, 255, 255, 0.2);
+        transition: .2s;
+        border-radius: 18px;
+      }
+      .slider:before {
+        position: absolute;
+        content: "";
+        height: 14px;
+        width: 14px;
+        left: 2px;
+        bottom: 2px;
+        background-color: var(--text-main);
+        transition: .2s;
+        border-radius: 50%;
+      }
+      input:checked + .slider {
+        background-color: var(--color-green);
+      }
+      input:checked + .slider:before {
+        transform: translateX(14px);
+      }
+      
+      .settings-popup.show {
+        display: block;
+      }
+      
+      .settings-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 12px;
+        font-weight: 600;
+        margin-bottom: 10px;
+        color: var(--text-muted);
+      }
+      
+      .logout-btn {
+        width: 100%;
+        background: rgba(239, 68, 68, 0.2);
+        border: 1px solid rgba(239, 68, 68, 0.4);
+        color: #fca5a5;
+        padding: 6px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 12px;
+        transition: background 0.2s;
+      }
+      
+      .logout-btn:hover {
+        background: rgba(239, 68, 68, 0.4);
       }
     </style>
   </head>
   <body>
     <div class="widget-container">
       <div class="header">
-        <h1>MySLT Usage</h1>
+        <h1 id="package-name-title">MySLT Usage</h1>
         <div class="actions">
           <button class="icon-btn" id="refresh-btn" title="Refresh">
-            <svg
-              width="14"
-              height="14"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-            >
-              <path
-                d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"
-              />
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/>
+            </svg>
+          </button>
+          <button class="icon-btn" id="settings-btn" title="Settings">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="3"></circle>
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
             </svg>
           </button>
         </div>
       </div>
 
-      <div id="auth-warning" class="auth-banner">
-        Session expired. Click to re-auth.
+      <div id="auth-state" class="auth-state">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="1.5" style="margin-bottom: 12px;">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+        </svg>
+        <div style="color: var(--text-muted); font-size: 14px;">Not Connected</div>
+        <button class="login-btn" id="login-btn">Login to MySLT</button>
       </div>
 
       <div id="cards-container">
-        <!-- Standard -->
-        <div class="usage-card">
-          <div class="card-header">
-            <span class="card-title">Standard</span>
-            <span class="card-value" id="val-standard">-- / -- GB</span>
-          </div>
-          <div class="progress-bar-bg">
-            <div
-              class="progress-bar-fill"
-              id="bar-standard"
-              style="width: 0%"
-            ></div>
-          </div>
+        <!-- Dynamically generated cards will go here -->
+      </div>
+      
+      <div id="settings-popup" class="settings-popup">
+        <div class="settings-header">
+          <span>Settings</span>
+          <button class="icon-btn" id="close-settings-btn" style="padding:0">✕</button>
+        </div>
+        
+        <div class="settings-section">
+          <label>Theme</label>
+          <select id="theme-select" class="theme-select">
+            <option value="dark">Dark</option>
+            <option value="light">Light</option>
+            <option value="blue">Midnight Blue</option>
+          </select>
+        </div>
+        
+        <div class="settings-section">
+          <label>Layout Mode</label>
+          <select id="mode-select" class="theme-select">
+            <option value="bar">Bar Charts</option>
+            <option value="pie">Pie Charts</option>
+          </select>
         </div>
 
-        <!-- Bonus -->
-        <div class="usage-card">
-          <div class="card-header">
-            <span class="card-title">Bonus</span>
-            <span class="card-value" id="val-bonus">-- / -- GB</span>
-          </div>
-          <div class="progress-bar-bg">
-            <div
-              class="progress-bar-fill"
-              id="bar-bonus"
-              style="width: 0%"
-            ></div>
-          </div>
+        <div class="settings-section" style="flex-direction: column; align-items: flex-start; gap: 8px;">
+          <label>Hidden Charts</label>
+          <div id="hidden-charts-list" style="display: flex; flex-wrap: wrap; gap: 4px;"></div>
+        </div>
+        
+        <div class="settings-section">
+          <label>Auto Refresh (mins)</label>
+          <input type="number" id="refresh-input" value="5" min="1" max="1440" />
+        </div>
+        
+        <div class="settings-section">
+          <label>Always on Top</label>
+          <label class="switch">
+            <input type="checkbox" id="ontop-toggle" checked />
+            <span class="slider"></span>
+          </label>
+        </div>
+        
+        <div class="settings-section">
+          <label>Auto-Resize Window</label>
+          <label class="switch">
+            <input type="checkbox" id="autoresize-toggle" checked />
+            <span class="slider"></span>
+          </label>
         </div>
 
-        <!-- VAS -->
-        <div class="usage-card">
-          <div class="card-header">
-            <span class="card-title">VAS</span>
-            <span class="card-value" id="val-vas">-- / -- GB</span>
-          </div>
-          <div class="progress-bar-bg">
-            <div class="progress-bar-fill" id="bar-vas" style="width: 0%"></div>
-          </div>
-        </div>
+        <div class="settings-divider"></div>
+        <button class="logout-btn" id="logout-btn">Log Out</button>
       </div>
 
       <div class="footer" id="footer-text">Waiting for data...</div>
@@ -232,46 +507,303 @@
         return "var(--color-red)";
       };
 
-      const updateCard = (id, used, total) => {
-        const remaining = total - used;
-        const percent = total > 0 ? (remaining / total) * 100 : 0;
 
-        document.getElementById(`val-${id}`).innerText =
-          `${remaining.toFixed(1)} / ${total.toFixed(1)} GB`;
-        const bar = document.getElementById(`bar-${id}`);
-        bar.style.width = `${percent}%`;
-        bar.style.backgroundColor = getColor(percent);
-      };
 
       document.getElementById("refresh-btn").addEventListener("click", () => {
         window.api.requestRefresh();
       });
 
-      document.getElementById("auth-warning").addEventListener("click", () => {
+      let appConfig = { chartMode: 'bar', chartOrder: [], hiddenCharts: [] };
+      let activeCardsData = [];
+
+      // Initialize settings
+      window.api.getConfig().then(config => {
+        if (config) {
+          appConfig = { chartMode: 'bar', chartOrder: [], hiddenCharts: [], ...config };
+          if (!appConfig.hiddenCharts) appConfig.hiddenCharts = [];
+          if (!appConfig.chartOrder) appConfig.chartOrder = [];
+          document.getElementById('refresh-input').value = config.refreshMinutes;
+          document.getElementById('ontop-toggle').checked = config.alwaysOnTop;
+          document.getElementById('autoresize-toggle').checked = appConfig.autoResize !== false;
+          if (config.theme) {
+            document.getElementById('theme-select').value = config.theme;
+            document.documentElement.setAttribute('data-theme', config.theme);
+          }
+          if (config.chartMode) {
+            document.getElementById('mode-select').value = config.chartMode;
+          }
+          if (activeCardsData.length > 0) renderCards();
+        }
+      });
+      
+      document.getElementById('mode-select').addEventListener('change', (e) => {
+        appConfig.chartMode = e.target.value;
+        window.api.updateSetting('chartMode', appConfig.chartMode);
+        renderCards();
+      });
+      
+      document.getElementById('theme-select').addEventListener('change', (e) => {
+        const theme = e.target.value;
+        document.documentElement.setAttribute('data-theme', theme);
+        window.api.updateSetting('theme', theme);
+      });
+
+      document.getElementById('refresh-input').addEventListener('change', (e) => {
+        let val = parseInt(e.target.value);
+        if (val < 1) val = 1;
+        window.api.updateSetting('refreshMinutes', val);
+      });
+
+      document.getElementById('ontop-toggle').addEventListener('change', (e) => {
+        window.api.updateSetting('alwaysOnTop', e.target.checked);
+      });
+
+      document.getElementById('autoresize-toggle').addEventListener('change', (e) => {
+        appConfig.autoResize = e.target.checked;
+        window.api.updateSetting('autoResize', e.target.checked);
+        if (e.target.checked) renderCards();
+        else {
+          document.getElementById('cards-container').style.overflowY = 'auto';
+          document.getElementById('cards-container').style.paddingRight = '4px';
+        }
+      });
+
+      window.api.onSettingUpdated((data) => {
+        if (data.key === 'autoResize') {
+          appConfig.autoResize = data.value;
+          document.getElementById('autoresize-toggle').checked = data.value;
+          if (!data.value) {
+            document.getElementById('cards-container').style.overflowY = 'auto';
+            document.getElementById('cards-container').style.paddingRight = '4px';
+          }
+        }
+      });
+
+      document.getElementById("settings-btn").addEventListener("click", () => {
+        document.getElementById("settings-popup").classList.toggle("show");
+      });
+
+      document.getElementById("close-settings-btn").addEventListener("click", () => {
+        document.getElementById("settings-popup").classList.remove("show");
+      });
+
+      document.getElementById("logout-btn").addEventListener("click", () => {
+        document.getElementById("settings-popup").classList.remove("show");
+        window.api.logout();
+      });
+
+      document.getElementById("login-btn").addEventListener("click", () => {
         window.api.openTokenEntry();
       });
 
+      let draggedCard = null;
+
+      function getDragAfterElement(container, y) {
+        const draggableElements = [...container.querySelectorAll('.usage-card:not(.dragging)')];
+        return draggableElements.reduce((closest, child) => {
+          const box = child.getBoundingClientRect();
+          const offset = y - box.top - box.height / 2;
+          if (offset < 0 && offset > closest.offset) {
+            return { offset: offset, element: child };
+          } else {
+            return closest;
+          }
+        }, { offset: Number.NEGATIVE_INFINITY }).element;
+      }
+
+      const createCard = (d) => {
+        let { name, used, limit, remaining, percent, unit } = d;
+        if (remaining === null || remaining === undefined) remaining = limit - used;
+        if (percent === null || percent === undefined) percent = limit > 0 ? (remaining / limit) * 100 : 0;
+        if (remaining < 0) { remaining = 0; percent = 0; }
+
+        const card = document.createElement("div");
+        card.className = "usage-card";
+        card.draggable = true;
+        card.dataset.name = name;
+        if (appConfig.chartMode === 'pie') card.classList.add('pie-card');
+
+        card.addEventListener('dragstart', (e) => {
+          draggedCard = card;
+          setTimeout(() => card.classList.add('dragging'), 0);
+        });
+        
+        card.addEventListener('dragend', () => {
+          card.classList.remove('dragging');
+          draggedCard = null;
+          
+          // Save new order
+          const container = document.getElementById("cards-container");
+          const newOrder = Array.from(container.children).map(c => c.dataset.name);
+          appConfig.chartOrder = newOrder;
+          window.api.updateSetting('chartOrder', newOrder);
+        });
+        
+        card.addEventListener('dragover', (e) => {
+          e.preventDefault();
+          const container = document.getElementById("cards-container");
+          const afterElement = getDragAfterElement(container, e.clientY);
+          if (afterElement == null) {
+            container.appendChild(draggedCard);
+          } else {
+            container.insertBefore(draggedCard, afterElement);
+          }
+        });
+
+        const color = getColor(percent);
+
+        if (appConfig.chartMode === 'pie') {
+          const c = 2 * Math.PI * 16;
+          const dashArray = `${(Math.max(0, Math.min(100, percent)) / 100) * c} ${c}`;
+          card.innerHTML = `
+            <button class="hide-btn" title="Hide">✕</button>
+            <div style="font-size: 11px; font-weight: 500; text-align: center; margin-bottom: 4px; width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${name}">${name}</div>
+            <div class="pie-chart">
+              <svg class="pie-svg" viewBox="0 0 36 36">
+                <circle class="pie-bg" cx="18" cy="18" r="16"></circle>
+                <circle class="pie-fill" cx="18" cy="18" r="16" stroke="${color}" stroke-dasharray="${dashArray}"></circle>
+              </svg>
+              <div class="pie-text" style="color: ${color}">${Math.round(percent)}%</div>
+            </div>
+            <div style="font-size: 10px; color: var(--text-muted); text-align: center; margin-top: 4px;">
+              ${parseFloat(remaining).toFixed(1)} / ${parseFloat(limit).toFixed(1)} ${unit}
+            </div>
+          `;
+        } else {
+          card.innerHTML = `
+            <button class="hide-btn" title="Hide">✕</button>
+            <div class="card-header">
+              <span class="card-title">${name}</span>
+              <span class="card-value">${parseFloat(remaining).toFixed(1)} / ${parseFloat(limit).toFixed(1)} ${unit || 'GB'}</span>
+            </div>
+            <div class="progress-bar-bg">
+              <div class="progress-bar-fill" style="width: ${Math.max(0, Math.min(100, percent))}%; background-color: ${color}"></div>
+            </div>
+            <div style="font-size: 10px; color: var(--text-muted); text-align: right; margin-top: -4px;">
+              Used: ${parseFloat(used).toFixed(1)} ${unit || 'GB'}
+            </div>
+          `;
+        }
+        
+        card.querySelector('.hide-btn').onclick = (e) => {
+          e.stopPropagation();
+          if (!appConfig.hiddenCharts) appConfig.hiddenCharts = [];
+          if (!appConfig.hiddenCharts.includes(name)) {
+            appConfig.hiddenCharts.push(name);
+            window.api.updateSetting('hiddenCharts', appConfig.hiddenCharts);
+            renderCards();
+          }
+        };
+
+        return card;
+      };
+
+      const renderCards = () => {
+        const container = document.getElementById("cards-container");
+        container.innerHTML = "";
+        
+        if (appConfig.chartMode === 'pie') {
+          container.classList.add('pie-mode');
+        } else {
+          container.classList.remove('pie-mode');
+        }
+        
+        if (!appConfig.hiddenCharts) appConfig.hiddenCharts = [];
+        if (!appConfig.chartOrder) appConfig.chartOrder = [];
+        
+        let visibleData = activeCardsData.filter(d => !appConfig.hiddenCharts.includes(d.name));
+        
+        visibleData.sort((a, b) => {
+          let ixA = appConfig.chartOrder.indexOf(a.name);
+          let ixB = appConfig.chartOrder.indexOf(b.name);
+          if (ixA === -1) ixA = 999;
+          if (ixB === -1) ixB = 999;
+          return ixA - ixB;
+        });
+
+        visibleData = visibleData.slice(0, 6);
+        
+        visibleData.forEach(d => {
+          container.appendChild(createCard(d));
+        });
+        
+        const hiddenList = document.getElementById('hidden-charts-list');
+        hiddenList.innerHTML = '';
+        if (appConfig.hiddenCharts.length === 0) {
+          hiddenList.innerHTML = '<span style="font-size: 10px; color: var(--text-muted)">None</span>';
+        } else {
+          appConfig.hiddenCharts.forEach(name => {
+            const btn = document.createElement('button');
+            btn.innerText = "+ " + name;
+            btn.style.cssText = "background: rgba(255,255,255,0.1); border: none; color: var(--text-main); font-size: 10px; padding: 2px 6px; border-radius: 4px; cursor: pointer;";
+            btn.onclick = () => {
+              appConfig.hiddenCharts = appConfig.hiddenCharts.filter(n => n !== name);
+              window.api.updateSetting('hiddenCharts', appConfig.hiddenCharts);
+              renderCards();
+            };
+            hiddenList.appendChild(btn);
+          });
+        }
+        
+        if (appConfig.autoResize !== false) {
+          document.getElementById('cards-container').style.overflowY = 'hidden';
+          document.getElementById('cards-container').style.paddingRight = '0';
+          
+          const effectiveCount = Math.max(1, visibleData.length);
+          let height = 110; // Accurate base height for paddings, header, and footer
+          
+          if (appConfig.chartMode === 'bar') {
+            height += (effectiveCount * 70) + ((effectiveCount - 1) * 12); 
+          } else {
+            const rows = Math.ceil(effectiveCount / 2);
+            height += (rows * 126) + ((rows - 1) * 16);
+          }
+          
+          window.api.resizeWindow(320, height);
+        } else {
+          document.getElementById('cards-container').style.overflowY = 'auto';
+          document.getElementById('cards-container').style.paddingRight = '4px';
+        }
+      };
+
       window.api.onData((data) => {
+        document.body.classList.remove("logged-out");
+        
         if (data && data.dataBundle) {
           const bundle = data.dataBundle;
-          const parseUsage = (summary) =>
-            summary
-              ? {
-                  used: parseFloat(summary.used),
-                  total: parseFloat(summary.limit),
-                }
-              : { used: 0, total: 0 };
+          const pkgInfo = bundle.my_package_info;
+          
+          if (pkgInfo && pkgInfo.package_name) {
+            document.getElementById("package-name-title").innerText = pkgInfo.package_name;
+          }
 
-          const standard = parseUsage(bundle.my_package_summary);
-          const bonus = parseUsage(bundle.bonus_data_summary);
-          const vas = parseUsage(bundle.vas_data_summary);
+          activeCardsData = [];
+          
+          if (pkgInfo && pkgInfo.usageDetails && Array.isArray(pkgInfo.usageDetails)) {
+            pkgInfo.usageDetails.forEach((detail) => {
+              let detailName = detail.name;
+              if (detailName === 'Total (Standard + Free)') detailName = 'Total';
+              activeCardsData.push({
+                name: detailName, used: detail.used, limit: detail.limit, remaining: detail.remaining, percent: detail.percentage, unit: detail.volume_unit
+              });
+            });
+          }
 
-          updateCard("standard", standard.used, standard.total);
-          updateCard("bonus", bonus.used, bonus.total);
-          updateCard("vas", vas.used, vas.total);
-
+          const summaryKeys = ['bonus_data_summary', 'free_data_summary', 'vas_data_summary', 'extra_gb_data_summary'];
+          summaryKeys.forEach(key => {
+            const summary = bundle[key];
+            if (summary && summary.limit !== undefined && summary.used !== undefined) {
+              const name = key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()).replace(' Summary', '');
+              activeCardsData.push({
+                name: name, used: summary.used, limit: summary.limit, remaining: null, percent: null, unit: summary.volume_unit
+              });
+            }
+          });
+          
+          renderCards();
+          
           document.getElementById("footer-text").innerText =
-            `Reported: ${bundle.reported_time || "Unknown"}`;
+            `Reported: ${bundle.reported_time || pkgInfo?.reported_time || "Unknown"}`;
         } else {
           const now = new Date();
           document.getElementById("footer-text").innerText =
@@ -280,7 +812,8 @@
       });
 
       window.api.onAuthExpired(() => {
-        document.getElementById("auth-warning").classList.add("show");
+        document.body.classList.add("logged-out");
+        document.getElementById("settings-popup").classList.remove("show");
       });
     </script>
   </body>

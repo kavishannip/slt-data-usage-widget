@@ -1,4 +1,5 @@
 node_modules/
 dist/
 config.json
-/implementation_plan/
+implimentation_plan/
+response.json

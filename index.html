@@ -126,6 +126,15 @@
         justify-content: space-evenly;
         gap: 16px;
       }
+      
+      #cards-container::-webkit-scrollbar {
+        width: 4px;
+      }
+      
+      #cards-container::-webkit-scrollbar-thumb {
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 4px;
+      }
 
       .usage-card {
         background: var(--card-bg);
@@ -475,6 +484,14 @@
             <span class="slider"></span>
           </label>
         </div>
+        
+        <div class="settings-section">
+          <label>Auto-Resize Window</label>
+          <label class="switch">
+            <input type="checkbox" id="autoresize-toggle" checked />
+            <span class="slider"></span>
+          </label>
+        </div>
 
         <div class="settings-divider"></div>
         <button class="logout-btn" id="logout-btn">Log Out</button>
@@ -507,6 +524,7 @@
           if (!appConfig.chartOrder) appConfig.chartOrder = [];
           document.getElementById('refresh-input').value = config.refreshMinutes;
           document.getElementById('ontop-toggle').checked = config.alwaysOnTop;
+          document.getElementById('autoresize-toggle').checked = appConfig.autoResize !== false;
           if (config.theme) {
             document.getElementById('theme-select').value = config.theme;
             document.documentElement.setAttribute('data-theme', config.theme);
@@ -538,6 +556,16 @@
 
       document.getElementById('ontop-toggle').addEventListener('change', (e) => {
         window.api.updateSetting('alwaysOnTop', e.target.checked);
+      });
+
+      document.getElementById('autoresize-toggle').addEventListener('change', (e) => {
+        appConfig.autoResize = e.target.checked;
+        window.api.updateSetting('autoResize', e.target.checked);
+        if (e.target.checked) renderCards();
+        else {
+          document.getElementById('cards-container').style.overflowY = 'auto';
+          document.getElementById('cards-container').style.paddingRight = '4px';
+        }
       });
 
       document.getElementById("settings-btn").addEventListener("click", () => {
@@ -706,16 +734,25 @@
           });
         }
         
-        let height = 150; // Base height for header, footer, padding
-        if (visibleData.length > 0) {
+        if (appConfig.autoResize !== false) {
+          document.getElementById('cards-container').style.overflowY = 'hidden';
+          document.getElementById('cards-container').style.paddingRight = '0';
+          
+          const effectiveCount = Math.max(1, visibleData.length);
+          let height = 110; // Accurate base height for paddings, header, and footer
+          
           if (appConfig.chartMode === 'bar') {
-            height += visibleData.length * 68; 
+            height += (effectiveCount * 70) + ((effectiveCount - 1) * 12); 
           } else {
-            const rows = Math.ceil(visibleData.length / 2);
-            height += rows * 135;
+            const rows = Math.ceil(effectiveCount / 2);
+            height += (rows * 126) + ((rows - 1) * 16);
           }
+          
+          window.api.resizeWindow(320, height);
+        } else {
+          document.getElementById('cards-container').style.overflowY = 'auto';
+          document.getElementById('cards-container').style.paddingRight = '4px';
         }
-        window.api.resizeWindow(320, Math.max(160, height));
       };
 
       window.api.onData((data) => {

@@ -270,7 +270,9 @@ function createWindow() {
     transparent: true,
     alwaysOnTop: isAlwaysOnTop,
     skipTaskbar: true,
-    resizable: false,
+    resizable: true,
+    minWidth: 320,
+    minHeight: 180,
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
@@ -419,7 +421,8 @@ ipcMain.handle('get-config', () => {
     theme: store.get('theme', 'dark'),
     chartMode: store.get('chartMode', 'bar'),
     chartOrder: store.get('chartOrder', []),
-    hiddenCharts: store.get('hiddenCharts', [])
+    hiddenCharts: store.get('hiddenCharts', []),
+    autoResize: store.get('autoResize', true)
   };
 });
 

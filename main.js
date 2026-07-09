@@ -7,6 +7,7 @@ const store = new Store();
 
 let mainWindow;
 let tokenWindow;
+let settingsWindow = null;
 let tray = null;
 let config;
 let authExpired = false;
@@ -430,6 +431,7 @@ ipcMain.handle('get-config', () => {
     alwaysOnTop: store.get('alwaysOnTop', true),
     theme: store.get('theme', 'dark'),
     chartMode: store.get('chartMode', 'bar'),
+    chartColorMode: store.get('chartColorMode', 'dynamic'),
     chartOrder: store.get('chartOrder', []),
     hiddenCharts: store.get('hiddenCharts', []),
     autoResize: store.get('autoResize', true)
@@ -437,6 +439,39 @@ ipcMain.handle('get-config', () => {
 });
 
 let isProgrammaticResize = false;
+
+ipcMain.on('open-settings', () => {
+  if (settingsWindow) {
+    settingsWindow.focus();
+    return;
+  }
+  
+  settingsWindow = new BrowserWindow({
+    width: 320,
+    height: 550,
+    frame: false,
+    transparent: true,
+    alwaysOnTop: store.get('alwaysOnTop', true),
+    resizable: true,
+    webPreferences: {
+      nodeIntegration: false,
+      contextIsolation: true,
+      preload: path.join(__dirname, 'preload.js')
+    }
+  });
+  
+  settingsWindow.loadFile('settings.html');
+  
+  settingsWindow.on('closed', () => {
+    settingsWindow = null;
+  });
+});
+
+ipcMain.on('close-settings', () => {
+  if (settingsWindow && !settingsWindow.isDestroyed()) {
+    settingsWindow.close();
+  }
+});
 
 ipcMain.on('resize-window', (event, { width, height }) => {
   if (mainWindow) {
@@ -464,5 +499,12 @@ ipcMain.on('update-setting', (event, { key, value }) => {
   }
   if (key === 'refreshMinutes') {
     startPolling();
+  }
+  
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.webContents.send('setting-updated', { key, value });
+  }
+  if (settingsWindow && !settingsWindow.isDestroyed()) {
+    settingsWindow.webContents.send('setting-updated', { key, value });
   }
 });

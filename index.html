@@ -41,6 +41,46 @@
         --card-bg: rgba(30, 41, 59, 0.5);
         --input-bg: rgba(30, 41, 59, 0.7);
       }
+      
+      [data-theme="transparent"] {
+        --bg-glass: transparent;
+        --border-glass: transparent;
+        --text-main: #ffffff;
+        --text-muted: #d1d5db;
+        --popup-bg: rgba(10, 10, 10, 0.9);
+        --card-bg: rgba(0, 0, 0, 0.3);
+        --input-bg: rgba(0, 0, 0, 0.5);
+      }
+      
+      [data-theme="purple"] {
+        --bg-glass: rgba(23, 15, 35, 0.85);
+        --border-glass: rgba(168, 85, 247, 0.2);
+        --text-main: #faf5ff;
+        --text-muted: #c084fc;
+        --popup-bg: rgba(23, 15, 35, 0.95);
+        --card-bg: rgba(43, 25, 60, 0.6);
+        --input-bg: rgba(59, 33, 80, 0.7);
+      }
+      
+      [data-theme="liquid-glass"] {
+        --bg-glass: rgba(255, 255, 255, 0.15);
+        --border-glass: rgba(255, 255, 255, 0.4);
+        --text-main: #ffffff;
+        --text-muted: rgba(255, 255, 255, 0.8);
+        --popup-bg: rgba(255, 255, 255, 0.2);
+        --card-bg: rgba(255, 255, 255, 0.1);
+        --input-bg: rgba(255, 255, 255, 0.2);
+      }
+      
+      [data-theme="hacker"] {
+        --bg-glass: rgba(0, 15, 0, 0.85);
+        --border-glass: rgba(0, 255, 0, 0.3);
+        --text-main: #00ff00;
+        --text-muted: #00aa00;
+        --popup-bg: rgba(0, 10, 0, 0.95);
+        --card-bg: rgba(0, 30, 0, 0.6);
+        --input-bg: rgba(0, 40, 0, 0.7);
+      }
 
       * {
         box-sizing: border-box;
@@ -295,11 +335,37 @@
         background: var(--popup-bg);
         border: 1px solid var(--border-glass);
         border-radius: 8px;
-        padding: 12px;
-        width: 200px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+        padding: 16px;
+        width: 260px;
+        max-height: 85vh;
+        overflow-y: auto;
+        box-shadow: 0 8px 24px rgba(0,0,0,0.6);
         z-index: 10;
         -webkit-app-region: no-drag;
+      }
+      
+      .settings-popup::-webkit-scrollbar {
+        width: 4px;
+      }
+      .settings-popup::-webkit-scrollbar-thumb {
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 4px;
+      }
+      
+      .settings-group-title {
+        font-size: 11px;
+        text-transform: uppercase;
+        color: var(--text-muted);
+        letter-spacing: 0.5px;
+        margin-top: 16px;
+        margin-bottom: 8px;
+        font-weight: 600;
+        border-bottom: 1px solid var(--border-glass);
+        padding-bottom: 4px;
+      }
+      
+      .settings-group-title:first-of-type {
+        margin-top: 0;
       }
       
       .settings-section {
@@ -444,64 +510,18 @@
         <!-- Dynamically generated cards will go here -->
       </div>
       
-      <div id="settings-popup" class="settings-popup">
-        <div class="settings-header">
-          <span>Settings</span>
-          <button class="icon-btn" id="close-settings-btn" style="padding:0">✕</button>
-        </div>
-        
-        <div class="settings-section">
-          <label>Theme</label>
-          <select id="theme-select" class="theme-select">
-            <option value="dark">Dark</option>
-            <option value="light">Light</option>
-            <option value="blue">Midnight Blue</option>
-          </select>
-        </div>
-        
-        <div class="settings-section">
-          <label>Layout Mode</label>
-          <select id="mode-select" class="theme-select">
-            <option value="bar">Bar Charts</option>
-            <option value="pie">Pie Charts</option>
-          </select>
-        </div>
-
-        <div class="settings-section" style="flex-direction: column; align-items: flex-start; gap: 8px;">
-          <label>Hidden Charts</label>
-          <div id="hidden-charts-list" style="display: flex; flex-wrap: wrap; gap: 4px;"></div>
-        </div>
-        
-        <div class="settings-section">
-          <label>Auto Refresh (mins)</label>
-          <input type="number" id="refresh-input" value="5" min="1" max="1440" />
-        </div>
-        
-        <div class="settings-section">
-          <label>Always on Top</label>
-          <label class="switch">
-            <input type="checkbox" id="ontop-toggle" checked />
-            <span class="slider"></span>
-          </label>
-        </div>
-        
-        <div class="settings-section">
-          <label>Auto-Resize Window</label>
-          <label class="switch">
-            <input type="checkbox" id="autoresize-toggle" checked />
-            <span class="slider"></span>
-          </label>
-        </div>
-
-        <div class="settings-divider"></div>
-        <button class="logout-btn" id="logout-btn">Log Out</button>
-      </div>
-
       <div class="footer" id="footer-text">Waiting for data...</div>
     </div>
 
     <script>
       const getColor = (percent) => {
+        const mode = appConfig.chartColorMode || 'dynamic';
+        if (mode === 'green') return "#10b981";
+        if (mode === 'blue') return "#3b82f6";
+        if (mode === 'purple') return "#a855f7";
+        if (mode === 'orange') return "#f97316";
+        if (mode === 'cyan') return "#06b6d4";
+        
         if (percent > 40) return "var(--color-green)";
         if (percent > 15) return "var(--color-amber)";
         return "var(--color-red)";
@@ -522,74 +542,27 @@
           appConfig = { chartMode: 'bar', chartOrder: [], hiddenCharts: [], ...config };
           if (!appConfig.hiddenCharts) appConfig.hiddenCharts = [];
           if (!appConfig.chartOrder) appConfig.chartOrder = [];
-          document.getElementById('refresh-input').value = config.refreshMinutes;
-          document.getElementById('ontop-toggle').checked = config.alwaysOnTop;
-          document.getElementById('autoresize-toggle').checked = appConfig.autoResize !== false;
+          
           if (config.theme) {
-            document.getElementById('theme-select').value = config.theme;
             document.documentElement.setAttribute('data-theme', config.theme);
-          }
-          if (config.chartMode) {
-            document.getElementById('mode-select').value = config.chartMode;
           }
           if (activeCardsData.length > 0) renderCards();
         }
       });
       
-      document.getElementById('mode-select').addEventListener('change', (e) => {
-        appConfig.chartMode = e.target.value;
-        window.api.updateSetting('chartMode', appConfig.chartMode);
-        renderCards();
-      });
-      
-      document.getElementById('theme-select').addEventListener('change', (e) => {
-        const theme = e.target.value;
-        document.documentElement.setAttribute('data-theme', theme);
-        window.api.updateSetting('theme', theme);
-      });
-
-      document.getElementById('refresh-input').addEventListener('change', (e) => {
-        let val = parseInt(e.target.value);
-        if (val < 1) val = 1;
-        window.api.updateSetting('refreshMinutes', val);
-      });
-
-      document.getElementById('ontop-toggle').addEventListener('change', (e) => {
-        window.api.updateSetting('alwaysOnTop', e.target.checked);
-      });
-
-      document.getElementById('autoresize-toggle').addEventListener('change', (e) => {
-        appConfig.autoResize = e.target.checked;
-        window.api.updateSetting('autoResize', e.target.checked);
-        if (e.target.checked) renderCards();
-        else {
+      window.api.onSettingUpdated((data) => {
+        appConfig[data.key] = data.value;
+        if (data.key === 'theme') {
+          document.documentElement.setAttribute('data-theme', data.value);
+        } else if (data.key === 'autoResize' && !data.value) {
           document.getElementById('cards-container').style.overflowY = 'auto';
           document.getElementById('cards-container').style.paddingRight = '4px';
         }
-      });
-
-      window.api.onSettingUpdated((data) => {
-        if (data.key === 'autoResize') {
-          appConfig.autoResize = data.value;
-          document.getElementById('autoresize-toggle').checked = data.value;
-          if (!data.value) {
-            document.getElementById('cards-container').style.overflowY = 'auto';
-            document.getElementById('cards-container').style.paddingRight = '4px';
-          }
-        }
+        renderCards();
       });
 
       document.getElementById("settings-btn").addEventListener("click", () => {
-        document.getElementById("settings-popup").classList.toggle("show");
-      });
-
-      document.getElementById("close-settings-btn").addEventListener("click", () => {
-        document.getElementById("settings-popup").classList.remove("show");
-      });
-
-      document.getElementById("logout-btn").addEventListener("click", () => {
-        document.getElementById("settings-popup").classList.remove("show");
-        window.api.logout();
+        window.api.openSettings();
       });
 
       document.getElementById("login-btn").addEventListener("click", () => {
@@ -727,23 +700,7 @@
           container.appendChild(createCard(d));
         });
         
-        const hiddenList = document.getElementById('hidden-charts-list');
-        hiddenList.innerHTML = '';
-        if (appConfig.hiddenCharts.length === 0) {
-          hiddenList.innerHTML = '<span style="font-size: 10px; color: var(--text-muted)">None</span>';
-        } else {
-          appConfig.hiddenCharts.forEach(name => {
-            const btn = document.createElement('button');
-            btn.innerText = "+ " + name;
-            btn.style.cssText = "background: rgba(255,255,255,0.1); border: none; color: var(--text-main); font-size: 10px; padding: 2px 6px; border-radius: 4px; cursor: pointer;";
-            btn.onclick = () => {
-              appConfig.hiddenCharts = appConfig.hiddenCharts.filter(n => n !== name);
-              window.api.updateSetting('hiddenCharts', appConfig.hiddenCharts);
-              renderCards();
-            };
-            hiddenList.appendChild(btn);
-          });
-        }
+
         
         if (appConfig.autoResize !== false) {
           document.getElementById('cards-container').style.overflowY = 'hidden';
@@ -813,7 +770,7 @@
 
       window.api.onAuthExpired(() => {
         document.body.classList.add("logged-out");
-        document.getElementById("settings-popup").classList.remove("show");
+        window.api.closeSettings();
       });
     </script>
   </body>

@@ -1,0 +1,370 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SLT Widget Settings</title>
+    <style>
+      :root {
+        --color-green: #10b981;
+        --color-amber: #f59e0b;
+        --color-red: #ef4444;
+      }
+      
+      [data-theme="dark"], :root {
+        --bg-glass: rgba(20, 20, 25, 0.75);
+        --border-glass: rgba(255, 255, 255, 0.1);
+        --text-main: #f0f0f0;
+        --text-muted: #a0a0a5;
+        --popup-bg: rgba(30, 30, 35, 0.95);
+        --card-bg: rgba(0, 0, 0, 0.2);
+        --input-bg: rgba(0, 0, 0, 0.3);
+      }
+      
+      [data-theme="light"] {
+        --bg-glass: rgba(255, 255, 255, 0.75);
+        --border-glass: rgba(0, 0, 0, 0.1);
+        --text-main: #1f2937;
+        --text-muted: #4b5563;
+        --popup-bg: rgba(240, 240, 245, 0.95);
+        --card-bg: rgba(255, 255, 255, 0.4);
+        --input-bg: rgba(255, 255, 255, 0.5);
+      }
+      
+      [data-theme="blue"] {
+        --bg-glass: rgba(15, 23, 42, 0.75);
+        --border-glass: rgba(56, 189, 248, 0.2);
+        --text-main: #f8fafc;
+        --text-muted: #94a3b8;
+        --popup-bg: rgba(15, 23, 42, 0.95);
+        --card-bg: rgba(30, 41, 59, 0.5);
+        --input-bg: rgba(30, 41, 59, 0.7);
+      }
+      
+      [data-theme="transparent"] {
+        --bg-glass: transparent;
+        --border-glass: transparent;
+        --text-main: #ffffff;
+        --text-muted: #d1d5db;
+        --popup-bg: rgba(10, 10, 10, 0.9);
+        --card-bg: rgba(0, 0, 0, 0.3);
+        --input-bg: rgba(0, 0, 0, 0.5);
+      }
+      
+      [data-theme="purple"] {
+        --bg-glass: rgba(23, 15, 35, 0.85);
+        --border-glass: rgba(168, 85, 247, 0.2);
+        --text-main: #faf5ff;
+        --text-muted: #c084fc;
+        --popup-bg: rgba(23, 15, 35, 0.95);
+        --card-bg: rgba(43, 25, 60, 0.6);
+        --input-bg: rgba(59, 33, 80, 0.7);
+      }
+      
+      [data-theme="liquid-glass"] {
+        --bg-glass: rgba(255, 255, 255, 0.15);
+        --border-glass: rgba(255, 255, 255, 0.4);
+        --text-main: #ffffff;
+        --text-muted: rgba(255, 255, 255, 0.8);
+        --popup-bg: rgba(255, 255, 255, 0.2);
+        --card-bg: rgba(255, 255, 255, 0.1);
+        --input-bg: rgba(255, 255, 255, 0.2);
+      }
+      
+      [data-theme="hacker"] {
+        --bg-glass: rgba(0, 15, 0, 0.85);
+        --border-glass: rgba(0, 255, 0, 0.3);
+        --text-main: #00ff00;
+        --text-muted: #00aa00;
+        --popup-bg: rgba(0, 10, 0, 0.95);
+        --card-bg: rgba(0, 30, 0, 0.6);
+        --input-bg: rgba(0, 40, 0, 0.7);
+      }
+
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+        background-color: transparent;
+        color: var(--text-main);
+        overflow: hidden;
+      }
+
+      .settings-popup {
+        background: var(--popup-bg);
+        border: 1px solid var(--border-glass);
+        border-radius: 8px;
+        padding: 16px;
+        height: 100vh;
+        width: 100vw;
+        overflow-y: auto;
+      }
+      
+      .settings-popup::-webkit-scrollbar { width: 4px; }
+      .settings-popup::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.2); border-radius: 4px; }
+      
+      .settings-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 14px;
+        font-weight: 600;
+        margin-bottom: 12px;
+        color: var(--text-muted);
+        -webkit-app-region: drag;
+        padding-bottom: 8px;
+        border-bottom: 1px solid var(--border-glass);
+      }
+      
+      .icon-btn {
+        background: transparent;
+        border: none;
+        color: var(--text-muted);
+        cursor: pointer;
+        padding: 4px;
+        border-radius: 4px;
+        -webkit-app-region: no-drag;
+      }
+      .icon-btn:hover { background: rgba(255, 255, 255, 0.1); color: var(--text-main); }
+
+      .settings-group-title {
+        font-size: 11px;
+        text-transform: uppercase;
+        color: var(--text-muted);
+        letter-spacing: 0.5px;
+        margin-top: 16px;
+        margin-bottom: 8px;
+        font-weight: 600;
+        border-bottom: 1px solid var(--border-glass);
+        padding-bottom: 4px;
+      }
+      .settings-group-title:first-of-type { margin-top: 0; }
+      
+      .settings-section {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 12px;
+        font-size: 12px;
+        color: var(--text-muted);
+      }
+      
+      .settings-section input[type="number"] {
+        width: 45px;
+        background: var(--input-bg);
+        border: 1px solid var(--border-glass);
+        color: var(--text-main);
+        padding: 4px;
+        border-radius: 4px;
+        font-size: 11px;
+        text-align: right;
+      }
+      
+      .theme-select {
+        background: var(--input-bg);
+        border: 1px solid var(--border-glass);
+        color: var(--text-main);
+        padding: 4px;
+        border-radius: 4px;
+        font-size: 11px;
+        width: 120px;
+        cursor: pointer;
+        outline: none;
+      }
+      
+      .theme-select option { background: var(--popup-bg); color: var(--text-main); }
+      
+      .switch { position: relative; display: inline-block; width: 32px; height: 18px; }
+      .switch input { opacity: 0; width: 0; height: 0; }
+      .slider {
+        position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
+        background-color: rgba(255, 255, 255, 0.2); transition: .2s; border-radius: 18px;
+      }
+      .slider:before {
+        position: absolute; content: ""; height: 14px; width: 14px; left: 2px; bottom: 2px;
+        background-color: var(--text-main); transition: .2s; border-radius: 50%;
+      }
+      input:checked + .slider { background-color: var(--color-green); }
+      input:checked + .slider:before { transform: translateX(14px); }
+      
+      .settings-divider { height: 1px; background: var(--border-glass); margin: 12px 0; }
+      
+      .logout-btn {
+        width: 100%; background: rgba(239, 68, 68, 0.2); border: 1px solid rgba(239, 68, 68, 0.4);
+        color: #fca5a5; padding: 6px; border-radius: 4px; cursor: pointer; font-size: 12px;
+        transition: background 0.2s;
+      }
+      .logout-btn:hover { background: rgba(239, 68, 68, 0.4); }
+    </style>
+  </head>
+  <body>
+    <div class="settings-popup">
+      <div class="settings-header">
+        <span>Settings</span>
+        <button class="icon-btn" id="close-settings-btn">✕</button>
+      </div>
+      
+      <div class="settings-group-title">Display & Theme</div>
+      <div class="settings-section">
+        <label>Theme</label>
+        <select id="theme-select" class="theme-select">
+          <option value="dark">Dark</option>
+          <option value="light">Light</option>
+          <option value="blue">Midnight Blue</option>
+          <option value="purple">Midnight Purple</option>
+          <option value="transparent">Transparent Glass</option>
+          <option value="liquid-glass">Liquid Glass</option>
+          <option value="hacker">Hacker Terminal</option>
+        </select>
+      </div>
+      
+      <div class="settings-section">
+        <label>Chart Colors</label>
+        <select id="chart-color-select" class="theme-select">
+          <option value="dynamic">Dynamic (G/A/R)</option>
+          <option value="green">Solid Green</option>
+          <option value="blue">Solid Blue</option>
+          <option value="purple">Solid Purple</option>
+          <option value="orange">Solid Orange</option>
+          <option value="cyan">Solid Cyan</option>
+        </select>
+      </div>
+      
+      <div class="settings-section">
+        <label>Layout Mode</label>
+        <select id="mode-select" class="theme-select">
+          <option value="bar">Bar Charts</option>
+          <option value="pie">Pie Charts</option>
+        </select>
+      </div>
+
+      <div class="settings-group-title">Behavior</div>
+      <div class="settings-section">
+        <label>Auto Refresh (mins)</label>
+        <input type="number" id="refresh-input" value="5" min="1" max="1440" />
+      </div>
+      
+      <div class="settings-section">
+        <label>Always on Top</label>
+        <label class="switch">
+          <input type="checkbox" id="ontop-toggle" checked />
+          <span class="slider"></span>
+        </label>
+      </div>
+      
+      <div class="settings-section">
+        <label>Auto-Resize Window</label>
+        <label class="switch">
+          <input type="checkbox" id="autoresize-toggle" checked />
+          <span class="slider"></span>
+        </label>
+      </div>
+
+      <div class="settings-group-title">Data Visibility</div>
+      <div class="settings-section" style="flex-direction: column; align-items: flex-start; gap: 8px;">
+        <label>Hidden Charts (Click to restore)</label>
+        <div id="hidden-charts-list" style="display: flex; flex-wrap: wrap; gap: 4px;"></div>
+      </div>
+
+      <div class="settings-divider"></div>
+      <button class="logout-btn" id="logout-btn">Log Out</button>
+    </div>
+
+    <script>
+      let appConfig = { hiddenCharts: [] };
+
+      // Initialize
+      window.api.getConfig().then(config => {
+        if (config) {
+          appConfig = { hiddenCharts: [], ...config };
+          if (!appConfig.hiddenCharts) appConfig.hiddenCharts = [];
+          
+          document.getElementById('refresh-input').value = config.refreshMinutes || 5;
+          document.getElementById('ontop-toggle').checked = config.alwaysOnTop !== false;
+          document.getElementById('autoresize-toggle').checked = config.autoResize !== false;
+          
+          if (config.theme) {
+            document.getElementById('theme-select').value = config.theme;
+            document.documentElement.setAttribute('data-theme', config.theme);
+          }
+          if (config.chartMode) document.getElementById('mode-select').value = config.chartMode;
+          if (config.chartColorMode) document.getElementById('chart-color-select').value = config.chartColorMode;
+          
+          renderHiddenCharts();
+        }
+      });
+
+      // Updates from main process
+      window.api.onSettingUpdated((data) => {
+        appConfig[data.key] = data.value;
+        if (data.key === 'theme') {
+          document.documentElement.setAttribute('data-theme', data.value);
+          document.getElementById('theme-select').value = data.value;
+        }
+        if (data.key === 'hiddenCharts') {
+          renderHiddenCharts();
+        }
+        if (data.key === 'autoResize') {
+          document.getElementById('autoresize-toggle').checked = data.value;
+        }
+      });
+
+      function renderHiddenCharts() {
+        const hiddenList = document.getElementById('hidden-charts-list');
+        hiddenList.innerHTML = '';
+        if (appConfig.hiddenCharts.length === 0) {
+          hiddenList.innerHTML = '<span style="font-size: 10px; color: var(--text-muted)">None</span>';
+        } else {
+          appConfig.hiddenCharts.forEach(name => {
+            const btn = document.createElement('button');
+            btn.innerText = "+ " + name;
+            btn.style.cssText = "background: rgba(255,255,255,0.1); border: none; color: var(--text-main); font-size: 10px; padding: 2px 6px; border-radius: 4px; cursor: pointer;";
+            btn.onclick = () => {
+              appConfig.hiddenCharts = appConfig.hiddenCharts.filter(n => n !== name);
+              window.api.updateSetting('hiddenCharts', appConfig.hiddenCharts);
+              renderHiddenCharts();
+            };
+            hiddenList.appendChild(btn);
+          });
+        }
+      }
+
+      document.getElementById('theme-select').addEventListener('change', (e) => {
+        const theme = e.target.value;
+        document.documentElement.setAttribute('data-theme', theme);
+        window.api.updateSetting('theme', theme);
+      });
+      
+      document.getElementById('chart-color-select').addEventListener('change', (e) => {
+        window.api.updateSetting('chartColorMode', e.target.value);
+      });
+
+      document.getElementById('mode-select').addEventListener('change', (e) => {
+        window.api.updateSetting('chartMode', e.target.value);
+      });
+
+      document.getElementById('refresh-input').addEventListener('change', (e) => {
+        let val = parseInt(e.target.value);
+        if (val < 1) val = 1;
+        window.api.updateSetting('refreshMinutes', val);
+      });
+
+      document.getElementById('ontop-toggle').addEventListener('change', (e) => {
+        window.api.updateSetting('alwaysOnTop', e.target.checked);
+      });
+
+      document.getElementById('autoresize-toggle').addEventListener('change', (e) => {
+        window.api.updateSetting('autoResize', e.target.checked);
+      });
+
+      document.getElementById('close-settings-btn').addEventListener('click', () => {
+        window.api.closeSettings();
+      });
+
+      document.getElementById('logout-btn').addEventListener('click', () => {
+        window.api.logout();
+        window.api.closeSettings();
+      });
+    </script>
+  </body>
+</html>

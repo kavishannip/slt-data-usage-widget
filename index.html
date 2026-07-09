@@ -62,16 +62,6 @@
         --input-bg: rgba(59, 33, 80, 0.7);
       }
       
-      [data-theme="liquid-glass"] {
-        --bg-glass: rgba(255, 255, 255, 0.15);
-        --border-glass: rgba(255, 255, 255, 0.4);
-        --text-main: #ffffff;
-        --text-muted: rgba(255, 255, 255, 0.8);
-        --popup-bg: rgba(255, 255, 255, 0.2);
-        --card-bg: rgba(255, 255, 255, 0.1);
-        --input-bg: rgba(255, 255, 255, 0.2);
-      }
-      
       [data-theme="hacker"] {
         --bg-glass: rgba(0, 15, 0, 0.85);
         --border-glass: rgba(0, 255, 0, 0.3);
@@ -482,7 +472,10 @@
   <body>
     <div class="widget-container">
       <div class="header">
-        <h1 id="package-name-title">MySLT Usage</h1>
+        <h1 style="display:flex; align-items:center; gap:6px;">
+          <span id="package-name-title">MySLT Usage</span>
+          <span id="status-dot" style="display:none; width:8px; height:8px; border-radius:50%; flex-shrink:0;"></span>
+        </h1>
         <div class="actions">
           <button class="icon-btn" id="refresh-btn" title="Refresh">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -532,6 +525,8 @@
       document.getElementById("refresh-btn").addEventListener("click", () => {
         window.api.requestRefresh();
       });
+
+
 
       let appConfig = { chartMode: 'bar', chartOrder: [], hiddenCharts: [] };
       let activeCardsData = [];
@@ -731,7 +726,20 @@
           const pkgInfo = bundle.my_package_info;
           
           if (pkgInfo && pkgInfo.package_name) {
-            document.getElementById("package-name-title").innerText = pkgInfo.package_name;
+            let pkgName = pkgInfo.package_name;
+            const dot = document.getElementById("status-dot");
+            dot.style.display = "inline-block";
+            
+            if (bundle.status === "NORMAL") {
+              dot.style.background = "var(--color-green)";
+              dot.title = "Speed is Normal";
+            } else if (bundle.status) {
+              dot.style.background = "var(--color-red)";
+              dot.title = "Speed Issue";
+              pkgName = bundle.status; // Shows LOW PAY BILL etc.
+            }
+            
+            document.getElementById("package-name-title").innerText = pkgName;
           }
 
           activeCardsData = [];

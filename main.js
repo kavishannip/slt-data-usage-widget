@@ -261,6 +261,7 @@ function createWindow() {
   const windowWidth = store.get('windowWidth', 320);
   const windowHeight = store.get('windowHeight', 420);
   const isAlwaysOnTop = store.get('alwaysOnTop', true);
+  const theme = store.get('theme', 'dark');
 
   mainWindow = new BrowserWindow({
     width: windowWidth,
@@ -446,6 +447,8 @@ ipcMain.on('open-settings', () => {
     return;
   }
   
+  const theme = store.get('theme', 'dark');
+  
   settingsWindow = new BrowserWindow({
     width: 320,
     height: 550,
@@ -471,6 +474,10 @@ ipcMain.on('close-settings', () => {
   if (settingsWindow && !settingsWindow.isDestroyed()) {
     settingsWindow.close();
   }
+});
+
+ipcMain.on('open-external', (e, url) => {
+  require('electron').shell.openExternal(url);
 });
 
 ipcMain.on('resize-window', (event, { width, height }) => {

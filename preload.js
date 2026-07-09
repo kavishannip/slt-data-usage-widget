@@ -12,5 +12,6 @@ contextBridge.exposeInMainWorld('api', {
   resizeWindow: (width, height) => ipcRenderer.send('resize-window', { width, height }),
   onSettingUpdated: (callback) => ipcRenderer.on('setting-updated', (_event, data) => callback(data)),
   openSettings: () => ipcRenderer.send('open-settings'),
-  closeSettings: () => ipcRenderer.send('close-settings')
+  closeSettings: () => ipcRenderer.send('close-settings'),
+  openExternal: (url) => ipcRenderer.send('open-external', url)
 });

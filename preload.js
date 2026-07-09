@@ -10,5 +10,12 @@ contextBridge.exposeInMainWorld('api', {
   getConfig: () => ipcRenderer.invoke('get-config'),
   updateSetting: (key, value) => ipcRenderer.send('update-setting', { key, value }),
   resizeWindow: (width, height) => ipcRenderer.send('resize-window', { width, height }),
-  onSettingUpdated: (callback) => ipcRenderer.on('setting-updated', (_event, data) => callback(data))
+  onSettingUpdated: (callback) => ipcRenderer.on('setting-updated', (_event, data) => callback(data)),
+  openSettings: () => ipcRenderer.send('open-settings'),
+  closeSettings: () => ipcRenderer.send('close-settings'),
+  openExternal: (url) => ipcRenderer.send('open-external', url),
+  onNetworkStats: (callback) => ipcRenderer.on('network-stats', (_event, data) => callback(data)),
+  closeApp: () => ipcRenderer.send('close-app'),
+  showNotification: (options) => ipcRenderer.send('show-notification', options),
+  onFetchError: (callback) => ipcRenderer.on('fetch-error', (_event, data) => callback(data))
 });

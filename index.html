@@ -3,12 +3,13 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>SLT Usage Widget</title>
+    <title>SLTDU Widget</title>
     <style>
       :root {
         --color-green: #10b981;
         --color-amber: #f59e0b;
         --color-red: #ef4444;
+        --color-blue: #3b82f6;
         --radius: 16px;
       }
       
@@ -40,6 +41,36 @@
         --popup-bg: rgba(15, 23, 42, 0.95);
         --card-bg: rgba(30, 41, 59, 0.5);
         --input-bg: rgba(30, 41, 59, 0.7);
+      }
+      
+      [data-theme="transparent"] {
+        --bg-glass: transparent;
+        --border-glass: transparent;
+        --text-main: #ffffff;
+        --text-muted: #d1d5db;
+        --popup-bg: rgba(10, 10, 10, 0.9);
+        --card-bg: rgba(0, 0, 0, 0.3);
+        --input-bg: rgba(0, 0, 0, 0.5);
+      }
+      
+      [data-theme="purple"] {
+        --bg-glass: rgba(23, 15, 35, 0.85);
+        --border-glass: rgba(168, 85, 247, 0.2);
+        --text-main: #faf5ff;
+        --text-muted: #c084fc;
+        --popup-bg: rgba(23, 15, 35, 0.95);
+        --card-bg: rgba(43, 25, 60, 0.6);
+        --input-bg: rgba(59, 33, 80, 0.7);
+      }
+      
+      [data-theme="hacker"] {
+        --bg-glass: rgba(0, 15, 0, 0.85);
+        --border-glass: rgba(0, 255, 0, 0.3);
+        --text-main: #00ff00;
+        --text-muted: #00aa00;
+        --popup-bg: rgba(0, 10, 0, 0.95);
+        --card-bg: rgba(0, 30, 0, 0.6);
+        --input-bg: rgba(0, 40, 0, 0.7);
       }
 
       * {
@@ -90,11 +121,22 @@
         letter-spacing: 0.5px;
         text-transform: uppercase;
         color: var(--text-muted);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        min-width: 0;
+      }
+      
+      #package-name-title {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
       }
 
       .actions {
         display: flex;
-        gap: 8px;
+        gap: 6px;
+        flex-shrink: 0;
         -webkit-app-region: no-drag;
       }
 
@@ -106,6 +148,10 @@
         padding: 4px;
         border-radius: 4px;
         transition: all 0.2s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
       }
 
       .icon-btn:hover {
@@ -255,7 +301,20 @@
         -webkit-app-region: drag;
       }
 
-      body.logged-out .auth-state {
+      /* ─── Error states ─── */
+      body.offline #auth-state,
+      body.offline #cards-container,
+      body.offline #footer-text,
+      body.error-state #auth-state,
+      body.error-state #cards-container,
+      body.error-state #footer-text {
+        display: none;
+      }
+      
+      body.offline #offline-state { display: flex; }
+      body.error-state #error-state { display: flex; }
+      
+      body.logged-out #auth-state {
         display: flex;
       }
       
@@ -295,11 +354,37 @@
         background: var(--popup-bg);
         border: 1px solid var(--border-glass);
         border-radius: 8px;
-        padding: 12px;
-        width: 200px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+        padding: 16px;
+        width: 260px;
+        max-height: 85vh;
+        overflow-y: auto;
+        box-shadow: 0 8px 24px rgba(0,0,0,0.6);
         z-index: 10;
         -webkit-app-region: no-drag;
+      }
+      
+      .settings-popup::-webkit-scrollbar {
+        width: 4px;
+      }
+      .settings-popup::-webkit-scrollbar-thumb {
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 4px;
+      }
+      
+      .settings-group-title {
+        font-size: 11px;
+        text-transform: uppercase;
+        color: var(--text-muted);
+        letter-spacing: 0.5px;
+        margin-top: 16px;
+        margin-bottom: 8px;
+        font-weight: 600;
+        border-bottom: 1px solid var(--border-glass);
+        padding-bottom: 4px;
+      }
+      
+      .settings-group-title:first-of-type {
+        margin-top: 0;
       }
       
       .settings-section {
@@ -411,12 +496,36 @@
       .logout-btn:hover {
         background: rgba(239, 68, 68, 0.4);
       }
+      
+      .network-monitor {
+        margin: 8px 12px;
+        padding: 8px;
+        background: var(--card-bg);
+        border: 1px solid var(--border-glass);
+        border-radius: 8px;
+      }
+      .network-stats {
+        display: flex;
+        justify-content: space-between;
+        font-size: 11px;
+        color: var(--text-muted);
+        margin-bottom: 4px;
+        font-family: monospace;
+      }
+      #network-chart {
+        width: 100%;
+        height: 40px;
+        display: block;
+      }
     </style>
   </head>
   <body>
     <div class="widget-container">
       <div class="header">
-        <h1 id="package-name-title">MySLT Usage</h1>
+        <h1 style="display:flex; align-items:center; gap:6px;">
+          <span id="package-name-title">MySLT Usage</span>
+          <span id="status-dot" style="display:none; width:8px; height:8px; border-radius:50%; flex-shrink:0;"></span>
+        </h1>
         <div class="actions">
           <button class="icon-btn" id="refresh-btn" title="Refresh">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -424,9 +533,15 @@
             </svg>
           </button>
           <button class="icon-btn" id="settings-btn" title="Settings">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path>
               <circle cx="12" cy="12" r="3"></circle>
-              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+            </svg>
+          </button>
+          <button class="icon-btn" id="close-btn" title="Close">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
             </svg>
           </button>
         </div>
@@ -440,68 +555,43 @@
         <button class="login-btn" id="login-btn">Login to MySLT</button>
       </div>
 
+      <div id="offline-state" class="auth-state">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--color-amber)" stroke-width="1.5" style="margin-bottom: 12px;">
+          <line x1="1" y1="1" x2="23" y2="23"/>
+          <path d="M16.72 11.06A10.94 10.94 0 0 1 19 12.55M5 12.55a10.94 10.94 0 0 1 5.17-2.39M10.71 5.05A16 16 0 0 1 22.56 9M1.42 9a15.91 15.91 0 0 1 4.7-2.88M8.53 16.11a6 6 0 0 1 6.95 0M12 20h.01"/>
+        </svg>
+        <div style="color: var(--text-muted); font-size: 14px; font-weight: 600; margin-bottom: 4px;">No Internet</div>
+        <div style="color: var(--text-muted); font-size: 11px; margin-bottom: 12px; text-align: center;">Check your connection and try again</div>
+        <button class="login-btn" id="offline-retry-btn" style="background: var(--color-amber);">Retry</button>
+      </div>
+
+      <div id="error-state" class="auth-state">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--color-red)" stroke-width="1.5" style="margin-bottom: 12px;">
+          <circle cx="12" cy="12" r="10"/>
+          <line x1="12" y1="8" x2="12" y2="12"/>
+          <line x1="12" y1="16" x2="12.01" y2="16"/>
+        </svg>
+        <div style="color: var(--text-muted); font-size: 14px; font-weight: 600; margin-bottom: 4px;">Server Error</div>
+        <div id="error-detail" style="color: var(--text-muted); font-size: 11px; margin-bottom: 12px; text-align: center;">Unable to reach SLT servers</div>
+        <button class="login-btn" id="error-retry-btn" style="background: var(--color-red);">Retry</button>
+      </div>
+
       <div id="cards-container">
         <!-- Dynamically generated cards will go here -->
       </div>
       
-      <div id="settings-popup" class="settings-popup">
-        <div class="settings-header">
-          <span>Settings</span>
-          <button class="icon-btn" id="close-settings-btn" style="padding:0">✕</button>
-        </div>
-        
-        <div class="settings-section">
-          <label>Theme</label>
-          <select id="theme-select" class="theme-select">
-            <option value="dark">Dark</option>
-            <option value="light">Light</option>
-            <option value="blue">Midnight Blue</option>
-          </select>
-        </div>
-        
-        <div class="settings-section">
-          <label>Layout Mode</label>
-          <select id="mode-select" class="theme-select">
-            <option value="bar">Bar Charts</option>
-            <option value="pie">Pie Charts</option>
-          </select>
-        </div>
-
-        <div class="settings-section" style="flex-direction: column; align-items: flex-start; gap: 8px;">
-          <label>Hidden Charts</label>
-          <div id="hidden-charts-list" style="display: flex; flex-wrap: wrap; gap: 4px;"></div>
-        </div>
-        
-        <div class="settings-section">
-          <label>Auto Refresh (mins)</label>
-          <input type="number" id="refresh-input" value="5" min="1" max="1440" />
-        </div>
-        
-        <div class="settings-section">
-          <label>Always on Top</label>
-          <label class="switch">
-            <input type="checkbox" id="ontop-toggle" checked />
-            <span class="slider"></span>
-          </label>
-        </div>
-        
-        <div class="settings-section">
-          <label>Auto-Resize Window</label>
-          <label class="switch">
-            <input type="checkbox" id="autoresize-toggle" checked />
-            <span class="slider"></span>
-          </label>
-        </div>
-
-        <div class="settings-divider"></div>
-        <button class="logout-btn" id="logout-btn">Log Out</button>
-      </div>
-
       <div class="footer" id="footer-text">Waiting for data...</div>
     </div>
 
     <script>
       const getColor = (percent) => {
+        const mode = appConfig.chartColorMode || 'dynamic';
+        if (mode === 'green') return "#10b981";
+        if (mode === 'blue') return "#3b82f6";
+        if (mode === 'purple') return "#a855f7";
+        if (mode === 'orange') return "#f97316";
+        if (mode === 'cyan') return "#06b6d4";
+        
         if (percent > 40) return "var(--color-green)";
         if (percent > 15) return "var(--color-amber)";
         return "var(--color-red)";
@@ -513,87 +603,161 @@
         window.api.requestRefresh();
       });
 
-      let appConfig = { chartMode: 'bar', chartOrder: [], hiddenCharts: [] };
+      document.getElementById("settings-btn").addEventListener("click", () => {
+        window.api.openSettings();
+      });
+
+      document.getElementById("close-btn").addEventListener("click", () => {
+        window.api.closeApp();
+      });
+
+      document.getElementById("login-btn").addEventListener("click", () => {
+        window.api.openTokenEntry();
+      });
+
+      document.getElementById("offline-retry-btn").addEventListener("click", () => {
+        document.body.classList.remove("offline");
+        window.api.requestRefresh();
+      });
+
+      document.getElementById("error-retry-btn").addEventListener("click", () => {
+        document.body.classList.remove("error-state");
+        window.api.requestRefresh();
+      });
+
+      let appConfig = { chartMode: 'bar', chartOrder: [], hiddenCharts: [], autoResize: true };
       let activeCardsData = [];
+      let lastNetworkStats = { total_rx: 0, total_tx: 0 };
+      
+      const formatSpeed = (bytes) => {
+        if (bytes === 0) return '0 B/s';
+        const k = 1024;
+        const sizes = ['B/s', 'KB/s', 'MB/s', 'GB/s'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+      };
+      
+      const networkHistory = [];
+      const MAX_HISTORY = 60;
+      
+      const renderNetworkChart = () => {
+        const canvas = document.querySelector('.network-chart-canvas');
+        if (!canvas) return;
+        
+        if (canvas.width !== canvas.offsetWidth) {
+          canvas.width = canvas.offsetWidth;
+        }
+        
+        const ctx = canvas.getContext('2d');
+        const width = canvas.width;
+        const height = canvas.height;
+        
+        ctx.clearRect(0, 0, width, height);
+        if (networkHistory.length === 0) return;
+        
+        let maxVal = 1024; // minimum 1 KB/s scale
+        networkHistory.forEach(d => {
+          if (d.upload > maxVal) maxVal = d.upload;
+          if (d.download > maxVal) maxVal = d.download;
+        });
+        
+        const step = width / (MAX_HISTORY - 1);
+        
+        // Upload (Green)
+        ctx.beginPath();
+        ctx.strokeStyle = '#10b981';
+        ctx.lineWidth = 1.5;
+        networkHistory.forEach((d, i) => {
+          const x = width - ((networkHistory.length - 1 - i) * step);
+          const y = height - (d.upload / maxVal * height);
+          if (i === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        });
+        ctx.stroke();
+        
+        // Download (Blue)
+        ctx.beginPath();
+        ctx.strokeStyle = '#3b82f6';
+        ctx.lineWidth = 1.5;
+        networkHistory.forEach((d, i) => {
+          const x = width - ((networkHistory.length - 1 - i) * step);
+          const y = height - (d.download / maxVal * height);
+          if (i === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        });
+        ctx.stroke();
+      };
+
+      if (window.api.onNetworkStats) {
+        window.api.onNetworkStats((stats) => {
+          lastNetworkStats = stats;
+          const upEl = document.getElementById('upload-speed');
+          const downEl = document.getElementById('download-speed');
+          if (upEl) upEl.innerText = formatSpeed(stats.upload);
+          if (downEl) downEl.innerText = formatSpeed(stats.download);
+          
+          networkHistory.push(stats);
+          if (networkHistory.length > MAX_HISTORY) networkHistory.shift();
+          renderNetworkChart();
+
+          if (appConfig.sessionIsActive) {
+            const startRx = appConfig.sessionStartTotalRx || 0;
+            const startTx = appConfig.sessionStartTotalTx || 0;
+            const limitBytes = (appConfig.sessionLimitMB || 0) * 1024 * 1024;
+            
+            if (limitBytes > 0) {
+              const currentRx = stats.total_rx;
+              const currentTx = stats.total_tx;
+              
+              const usedRx = currentRx >= startRx ? currentRx - startRx : currentRx;
+              const usedTx = currentTx >= startTx ? currentTx - startTx : currentTx;
+              const usedTotal = usedRx + usedTx;
+              const percent = Math.min(100, (usedTotal / limitBytes) * 100);
+              
+              if (usedTotal >= limitBytes && !appConfig.sessionNotified) {
+                window.api.showNotification({
+                  title: 'Data Limit Reached',
+                  body: `You have reached your custom limit of ${appConfig.sessionLimitMB} MB.`
+                });
+                window.api.updateSetting('sessionNotified', true);
+                appConfig.sessionNotified = true;
+              }
+              
+              const progressFill = document.querySelector('.session-progress-fill');
+              const usageText = document.getElementById('session-usage-text');
+              if (progressFill && usageText) {
+                progressFill.style.width = percent + '%';
+                progressFill.style.backgroundColor = getColor(100 - percent);
+                usageText.innerText = (usedTotal / (1024*1024)).toFixed(1) + ' / ' + appConfig.sessionLimitMB + ' MB';
+              }
+            }
+          }
+        });
+      }
 
       // Initialize settings
       window.api.getConfig().then(config => {
         if (config) {
-          appConfig = { chartMode: 'bar', chartOrder: [], hiddenCharts: [], ...config };
+          appConfig = { autoResize: true, chartMode: 'bar', chartOrder: [], hiddenCharts: [], ...config };
           if (!appConfig.hiddenCharts) appConfig.hiddenCharts = [];
           if (!appConfig.chartOrder) appConfig.chartOrder = [];
-          document.getElementById('refresh-input').value = config.refreshMinutes;
-          document.getElementById('ontop-toggle').checked = config.alwaysOnTop;
-          document.getElementById('autoresize-toggle').checked = appConfig.autoResize !== false;
+          
           if (config.theme) {
-            document.getElementById('theme-select').value = config.theme;
             document.documentElement.setAttribute('data-theme', config.theme);
-          }
-          if (config.chartMode) {
-            document.getElementById('mode-select').value = config.chartMode;
           }
           if (activeCardsData.length > 0) renderCards();
         }
       });
       
-      document.getElementById('mode-select').addEventListener('change', (e) => {
-        appConfig.chartMode = e.target.value;
-        window.api.updateSetting('chartMode', appConfig.chartMode);
-        renderCards();
-      });
-      
-      document.getElementById('theme-select').addEventListener('change', (e) => {
-        const theme = e.target.value;
-        document.documentElement.setAttribute('data-theme', theme);
-        window.api.updateSetting('theme', theme);
-      });
-
-      document.getElementById('refresh-input').addEventListener('change', (e) => {
-        let val = parseInt(e.target.value);
-        if (val < 1) val = 1;
-        window.api.updateSetting('refreshMinutes', val);
-      });
-
-      document.getElementById('ontop-toggle').addEventListener('change', (e) => {
-        window.api.updateSetting('alwaysOnTop', e.target.checked);
-      });
-
-      document.getElementById('autoresize-toggle').addEventListener('change', (e) => {
-        appConfig.autoResize = e.target.checked;
-        window.api.updateSetting('autoResize', e.target.checked);
-        if (e.target.checked) renderCards();
-        else {
+      window.api.onSettingUpdated((data) => {
+        appConfig[data.key] = data.value;
+        if (data.key === 'theme') {
+          document.documentElement.setAttribute('data-theme', data.value);
+        } else if (data.key === 'autoResize' && !data.value) {
           document.getElementById('cards-container').style.overflowY = 'auto';
           document.getElementById('cards-container').style.paddingRight = '4px';
         }
-      });
-
-      window.api.onSettingUpdated((data) => {
-        if (data.key === 'autoResize') {
-          appConfig.autoResize = data.value;
-          document.getElementById('autoresize-toggle').checked = data.value;
-          if (!data.value) {
-            document.getElementById('cards-container').style.overflowY = 'auto';
-            document.getElementById('cards-container').style.paddingRight = '4px';
-          }
-        }
-      });
-
-      document.getElementById("settings-btn").addEventListener("click", () => {
-        document.getElementById("settings-popup").classList.toggle("show");
-      });
-
-      document.getElementById("close-settings-btn").addEventListener("click", () => {
-        document.getElementById("settings-popup").classList.remove("show");
-      });
-
-      document.getElementById("logout-btn").addEventListener("click", () => {
-        document.getElementById("settings-popup").classList.remove("show");
-        window.api.logout();
-      });
-
-      document.getElementById("login-btn").addEventListener("click", () => {
-        window.api.openTokenEntry();
+        renderCards();
       });
 
       let draggedCard = null;
@@ -612,16 +776,18 @@
       }
 
       const createCard = (d) => {
-        let { name, used, limit, remaining, percent, unit } = d;
-        if (remaining === null || remaining === undefined) remaining = limit - used;
-        if (percent === null || percent === undefined) percent = limit > 0 ? (remaining / limit) * 100 : 0;
-        if (remaining < 0) { remaining = 0; percent = 0; }
+        let { name, used, limit, remaining, percent, unit, type } = d;
+        if (type !== 'network' && type !== 'session') {
+          if (remaining === null || remaining === undefined) remaining = limit - used;
+          if (percent === null || percent === undefined) percent = limit > 0 ? (remaining / limit) * 100 : 0;
+          if (remaining < 0) { remaining = 0; percent = 0; }
+        }
 
         const card = document.createElement("div");
         card.className = "usage-card";
         card.draggable = true;
         card.dataset.name = name;
-        if (appConfig.chartMode === 'pie') card.classList.add('pie-card');
+        if (appConfig.chartMode === 'pie' && type !== 'network' && type !== 'session') card.classList.add('pie-card');
 
         card.addEventListener('dragstart', (e) => {
           draggedCard = card;
@@ -650,9 +816,98 @@
           }
         });
 
-        const color = getColor(percent);
+        const color = type === 'network' ? '#3b82f6' : (type === 'session' ? 'var(--color-blue)' : getColor(percent));
 
-        if (appConfig.chartMode === 'pie') {
+        if (type === 'session') {
+          card.innerHTML = `
+            <button class="hide-btn" title="Hide">✕</button>
+            <div class="card-header" style="margin-bottom: 2px;">
+              <span class="card-title">${name}</span>
+            </div>
+            <div style="display:flex; gap: 8px; margin: 4px 0;">
+              <input type="number" id="session-limit-input" style="flex: 1; background: var(--input-bg); border: 1px solid var(--border-glass); color: var(--text-main); font-size: 11px; padding: 2px 4px; border-radius: 4px;" placeholder="MB" value="${appConfig.sessionLimitMB || 500}">
+              <button id="session-toggle-btn" style="background: ${appConfig.sessionIsActive ? 'var(--color-red)' : 'var(--color-green)'}; color: white; border: none; border-radius: 4px; padding: 2px 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; width: 32px;">
+                ${appConfig.sessionIsActive 
+                  ? '<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12"></rect></svg>'
+                  : '<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>'
+                }
+              </button>
+            </div>
+            <div class="progress-bar-bg" style="height: 6px; margin-top: 4px;">
+              <div class="progress-bar-fill session-progress-fill" style="width: 0%; background-color: var(--color-blue)"></div>
+            </div>
+            <div style="font-size: 10px; color: var(--text-muted); text-align: right; margin-top: 2px;">
+              <span id="session-usage-text">0.0 / ${appConfig.sessionLimitMB || 500} MB</span>
+            </div>
+          `;
+          
+          setTimeout(() => {
+            const toggleBtn = card.querySelector('#session-toggle-btn');
+            const input = card.querySelector('#session-limit-input');
+            
+            if (appConfig.sessionIsActive) {
+              input.disabled = true;
+            }
+            
+            toggleBtn.onclick = () => {
+              if (appConfig.sessionIsActive) {
+                // Stop it
+                appConfig.sessionIsActive = false;
+                window.api.updateSetting('sessionIsActive', false);
+                
+                input.disabled = false;
+                toggleBtn.style.background = 'var(--color-green)';
+                toggleBtn.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>';
+                
+                const progressFill = card.querySelector('.session-progress-fill');
+                if (progressFill) {
+                  progressFill.style.width = '0%';
+                  progressFill.style.backgroundColor = 'var(--color-blue)';
+                }
+                card.querySelector('#session-usage-text').innerText = '0.0 / ' + (appConfig.sessionLimitMB || 500) + ' MB';
+              } else {
+                // Play it
+                const mb = parseInt(input.value) || 0;
+                if (mb <= 0) return;
+                
+                appConfig.sessionLimitMB = mb;
+                appConfig.sessionIsActive = true;
+                appConfig.sessionStartTotalRx = lastNetworkStats.total_rx || 0;
+                appConfig.sessionStartTotalTx = lastNetworkStats.total_tx || 0;
+                appConfig.sessionNotified = false;
+                
+                window.api.updateSetting('sessionLimitMB', mb);
+                window.api.updateSetting('sessionIsActive', true);
+                window.api.updateSetting('sessionStartTotalRx', appConfig.sessionStartTotalRx);
+                window.api.updateSetting('sessionStartTotalTx', appConfig.sessionStartTotalTx);
+                window.api.updateSetting('sessionNotified', false);
+                
+                input.disabled = true;
+                toggleBtn.style.background = 'var(--color-red)';
+                toggleBtn.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12"></rect></svg>';
+              }
+            };
+            
+            input.onchange = (e) => {
+              const mb = parseInt(e.target.value) || 0;
+              appConfig.sessionLimitMB = mb;
+              window.api.updateSetting('sessionLimitMB', mb);
+              card.querySelector('#session-usage-text').innerText = '0.0 / ' + mb + ' MB';
+            };
+          }, 0);
+        } else if (type === 'network') {
+          card.innerHTML = `
+            <button class="hide-btn" title="Hide">✕</button>
+            <div class="card-header" style="margin-bottom: 2px;">
+              <span class="card-title">${name}</span>
+            </div>
+            <div class="network-stats" style="display:flex; justify-content:space-between; font-size:10px; color:var(--text-muted); font-family:monospace;">
+              <div><span style="color:#10b981">▲</span> <span id="upload-speed">0 B/s</span></div>
+              <div><span style="color:#3b82f6">▼</span> <span id="download-speed">0 B/s</span></div>
+            </div>
+            <canvas class="network-chart-canvas" height="30" style="width:100%; display:block; margin-top:2px;"></canvas>
+          `;
+        } else if (appConfig.chartMode === 'pie') {
           const c = 2 * Math.PI * 16;
           const dashArray = `${(Math.max(0, Math.min(100, percent)) / 100) * c} ${c}`;
           card.innerHTML = `
@@ -727,23 +982,8 @@
           container.appendChild(createCard(d));
         });
         
-        const hiddenList = document.getElementById('hidden-charts-list');
-        hiddenList.innerHTML = '';
-        if (appConfig.hiddenCharts.length === 0) {
-          hiddenList.innerHTML = '<span style="font-size: 10px; color: var(--text-muted)">None</span>';
-        } else {
-          appConfig.hiddenCharts.forEach(name => {
-            const btn = document.createElement('button');
-            btn.innerText = "+ " + name;
-            btn.style.cssText = "background: rgba(255,255,255,0.1); border: none; color: var(--text-main); font-size: 10px; padding: 2px 6px; border-radius: 4px; cursor: pointer;";
-            btn.onclick = () => {
-              appConfig.hiddenCharts = appConfig.hiddenCharts.filter(n => n !== name);
-              window.api.updateSetting('hiddenCharts', appConfig.hiddenCharts);
-              renderCards();
-            };
-            hiddenList.appendChild(btn);
-          });
-        }
+
+        renderNetworkChart();
         
         if (appConfig.autoResize !== false) {
           document.getElementById('cards-container').style.overflowY = 'hidden';
@@ -767,14 +1007,27 @@
       };
 
       window.api.onData((data) => {
-        document.body.classList.remove("logged-out");
+        document.body.classList.remove('logged-out', 'offline', 'error-state');
         
         if (data && data.dataBundle) {
           const bundle = data.dataBundle;
           const pkgInfo = bundle.my_package_info;
           
           if (pkgInfo && pkgInfo.package_name) {
-            document.getElementById("package-name-title").innerText = pkgInfo.package_name;
+            let pkgName = pkgInfo.package_name;
+            const dot = document.getElementById("status-dot");
+            dot.style.display = "inline-block";
+            
+            if (bundle.status === "NORMAL") {
+              dot.style.background = "var(--color-green)";
+              dot.title = "Speed is Normal";
+            } else if (bundle.status) {
+              dot.style.background = "var(--color-red)";
+              dot.title = "Speed Issue";
+              pkgName = bundle.status; // Shows LOW PAY BILL etc.
+            }
+            
+            document.getElementById("package-name-title").innerText = pkgName;
           }
 
           activeCardsData = [];
@@ -800,6 +1053,9 @@
             }
           });
           
+          activeCardsData.push({ name: 'Network Traffic', type: 'network' });
+          activeCardsData.push({ name: 'Set Data Limit', type: 'session' });
+          
           renderCards();
           
           document.getElementById("footer-text").innerText =
@@ -812,8 +1068,31 @@
       });
 
       window.api.onAuthExpired(() => {
+        document.body.classList.remove("offline", "error-state");
         document.body.classList.add("logged-out");
-        document.getElementById("settings-popup").classList.remove("show");
+        window.api.closeSettings();
+      });
+
+      window.api.onFetchError((err) => {
+        if (err.type === 'offline') {
+          // Always show offline screen — stale data is misleading
+          document.body.classList.remove('logged-out', 'error-state');
+          document.body.classList.add('offline');
+          return;
+        }
+
+        // For server errors: only replace UI if there's no data yet
+        const hasData = document.querySelectorAll('#cards-container .usage-card').length > 0;
+        if (hasData) {
+          const footer = document.getElementById('footer-text');
+          if (footer) footer.innerText = `Error — showing last data`;
+          return;
+        }
+
+        document.body.classList.remove('logged-out', 'offline', 'error-state');
+        const detail = document.getElementById('error-detail');
+        if (detail) detail.innerText = err.status ? `Server responded with error ${err.status}` : 'Unable to reach SLT servers';
+        document.body.classList.add('error-state');
       });
     </script>
   </body>

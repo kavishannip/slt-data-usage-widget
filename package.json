@@ -1,7 +1,7 @@
 {
-  "name": "slt-usage-widget",
+  "name": "sltdu-widget",
   "version": "1.0.0",
-  "description": "SLT Data Usage Widget",
+  "description": "SLTDU Widget — SLT Data Usage Desktop Widget",
   "main": "main.js",
   "scripts": {
     "start": "electron .",
@@ -9,10 +9,15 @@
   },
   "build": {
     "appId": "com.slt.usagewidget",
-    "productName": "SLT Usage Widget",
+    "productName": "SLTDU Widget",
     "win": {
-      "target": "nsis"
+      "target": "nsis",
+      "icon": "build/icon.ico"
     },
+    "files": [
+      "**/*",
+      "build/icon.ico"
+    ],
     "nsis": {
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
@@ -28,6 +33,7 @@
   },
   "dependencies": {
     "auto-launch": "^5.0.6",
-    "electron-store": "^8.2.0"
+    "electron-store": "^8.2.0",
+    "systeminformation": "^5.31.15"
   }
 }

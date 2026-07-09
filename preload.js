@@ -16,5 +16,6 @@ contextBridge.exposeInMainWorld('api', {
   openExternal: (url) => ipcRenderer.send('open-external', url),
   onNetworkStats: (callback) => ipcRenderer.on('network-stats', (_event, data) => callback(data)),
   closeApp: () => ipcRenderer.send('close-app'),
-  showNotification: (options) => ipcRenderer.send('show-notification', options)
+  showNotification: (options) => ipcRenderer.send('show-notification', options),
+  onFetchError: (callback) => ipcRenderer.on('fetch-error', (_event, data) => callback(data))
 });

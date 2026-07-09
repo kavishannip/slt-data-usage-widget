@@ -69,7 +69,7 @@ function loadConfig() {
   config = {
     subscriberID: store.get('subscriberID', ''),
     headers: store.get('headers', { Authorization: '', 'X-IBM-Client-Id': 'b7402e9d66808f762ccedbe42c20668e' }),
-    refreshMinutes: store.get('refreshMinutes', 5),
+    refreshMinutes: store.get('refreshMinutes', 1),
     warnThresholdPercent: store.get('warnThresholdPercent', 20),
     criticalThresholdPercent: store.get('criticalThresholdPercent', 10),
     autoLaunch: store.get('autoLaunch', true),
@@ -170,7 +170,7 @@ async function fetchUsage() {
       cache: 'no-store'
     });
 
-    if (response.status === 401) {
+    if (response.status === 401 || response.status === 403) {
       authExpired = true;
       if (mainWindow) mainWindow.webContents.send('auth-expired');
       attemptHiddenRefresh();
@@ -178,6 +178,7 @@ async function fetchUsage() {
     }
 
     if (!response.ok) {
+      if (mainWindow) mainWindow.webContents.send('fetch-error', { type: 'server', status: response.status });
       throw new Error(`HTTP error! status: ${response.status}`);
     }
 
@@ -230,6 +231,24 @@ async function fetchUsage() {
     }
   } catch (error) {
     console.error('Fetch error:', error);
+    // Distinguish network errors (no internet) from other errors
+    const isNetworkError = error.message && (
+      error.message.includes('ENOTFOUND') ||
+      error.message.includes('ECONNREFUSED') ||
+      error.message.includes('ECONNRESET') ||
+      error.message.includes('ETIMEDOUT') ||
+      error.message.includes('fetch failed') ||
+      error.message.includes('ERR_INTERNET_DISCONNECTED') ||
+      error.message.includes('ERR_NAME_NOT_RESOLVED') ||
+      error.code === 'ENOTFOUND' ||
+      error.code === 'ECONNREFUSED'
+    );
+    if (mainWindow) {
+      mainWindow.webContents.send('fetch-error', {
+        type: isNetworkError ? 'offline' : 'server',
+        message: error.message
+      });
+    }
   }
 }
 

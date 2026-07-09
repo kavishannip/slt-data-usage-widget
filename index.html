@@ -300,7 +300,20 @@
         -webkit-app-region: drag;
       }
 
-      body.logged-out .auth-state {
+      /* ─── Error states ─── */
+      body.offline #auth-state,
+      body.offline #cards-container,
+      body.offline #footer-text,
+      body.error-state #auth-state,
+      body.error-state #cards-container,
+      body.error-state #footer-text {
+        display: none;
+      }
+      
+      body.offline #offline-state { display: flex; }
+      body.error-state #error-state { display: flex; }
+      
+      body.logged-out #auth-state {
         display: flex;
       }
       
@@ -541,6 +554,27 @@
         <button class="login-btn" id="login-btn">Login to MySLT</button>
       </div>
 
+      <div id="offline-state" class="auth-state">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--color-amber)" stroke-width="1.5" style="margin-bottom: 12px;">
+          <line x1="1" y1="1" x2="23" y2="23"/>
+          <path d="M16.72 11.06A10.94 10.94 0 0 1 19 12.55M5 12.55a10.94 10.94 0 0 1 5.17-2.39M10.71 5.05A16 16 0 0 1 22.56 9M1.42 9a15.91 15.91 0 0 1 4.7-2.88M8.53 16.11a6 6 0 0 1 6.95 0M12 20h.01"/>
+        </svg>
+        <div style="color: var(--text-muted); font-size: 14px; font-weight: 600; margin-bottom: 4px;">No Internet</div>
+        <div style="color: var(--text-muted); font-size: 11px; margin-bottom: 12px; text-align: center;">Check your connection and try again</div>
+        <button class="login-btn" id="offline-retry-btn" style="background: var(--color-amber);">Retry</button>
+      </div>
+
+      <div id="error-state" class="auth-state">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--color-red)" stroke-width="1.5" style="margin-bottom: 12px;">
+          <circle cx="12" cy="12" r="10"/>
+          <line x1="12" y1="8" x2="12" y2="12"/>
+          <line x1="12" y1="16" x2="12.01" y2="16"/>
+        </svg>
+        <div style="color: var(--text-muted); font-size: 14px; font-weight: 600; margin-bottom: 4px;">Server Error</div>
+        <div id="error-detail" style="color: var(--text-muted); font-size: 11px; margin-bottom: 12px; text-align: center;">Unable to reach SLT servers</div>
+        <button class="login-btn" id="error-retry-btn" style="background: var(--color-red);">Retry</button>
+      </div>
+
       <div id="cards-container">
         <!-- Dynamically generated cards will go here -->
       </div>
@@ -578,6 +612,16 @@
 
       document.getElementById("login-btn").addEventListener("click", () => {
         window.api.openTokenEntry();
+      });
+
+      document.getElementById("offline-retry-btn").addEventListener("click", () => {
+        document.body.classList.remove("offline");
+        window.api.requestRefresh();
+      });
+
+      document.getElementById("error-retry-btn").addEventListener("click", () => {
+        document.body.classList.remove("error-state");
+        window.api.requestRefresh();
       });
 
       let appConfig = { chartMode: 'bar', chartOrder: [], hiddenCharts: [], autoResize: true };
@@ -970,7 +1014,7 @@
       };
 
       window.api.onData((data) => {
-        document.body.classList.remove("logged-out");
+        document.body.classList.remove('logged-out', 'offline', 'error-state');
         
         if (data && data.dataBundle) {
           const bundle = data.dataBundle;
@@ -1031,8 +1075,31 @@
       });
 
       window.api.onAuthExpired(() => {
+        document.body.classList.remove("offline", "error-state");
         document.body.classList.add("logged-out");
         window.api.closeSettings();
+      });
+
+      window.api.onFetchError((err) => {
+        if (err.type === 'offline') {
+          // Always show offline screen — stale data is misleading
+          document.body.classList.remove('logged-out', 'error-state');
+          document.body.classList.add('offline');
+          return;
+        }
+
+        // For server errors: only replace UI if there's no data yet
+        const hasData = document.querySelectorAll('#cards-container .usage-card').length > 0;
+        if (hasData) {
+          const footer = document.getElementById('footer-text');
+          if (footer) footer.innerText = `Error — showing last data`;
+          return;
+        }
+
+        document.body.classList.remove('logged-out', 'offline', 'error-state');
+        const detail = document.getElementById('error-detail');
+        if (detail) detail.innerText = err.status ? `Server responded with error ${err.status}` : 'Unable to reach SLT servers';
+        document.body.classList.add('error-state');
       });
     </script>
   </body>

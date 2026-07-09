@@ -4,6 +4,7 @@ const Store = require('electron-store');
 const AutoLaunch = require('auto-launch');
 
 const store = new Store();
+const si = require('systeminformation');
 
 let mainWindow;
 let tokenWindow;
@@ -71,7 +72,9 @@ function loadConfig() {
     refreshMinutes: store.get('refreshMinutes', 5),
     warnThresholdPercent: store.get('warnThresholdPercent', 20),
     criticalThresholdPercent: store.get('criticalThresholdPercent', 10),
-    autoLaunch: store.get('autoLaunch', true)
+    autoLaunch: store.get('autoLaunch', true),
+    notifyOnLowData: store.get('notifyOnLowData', true),
+    lowDataThresholdPercent: store.get('lowDataThresholdPercent', 20)
   };
 }
 
@@ -83,8 +86,34 @@ function updateAutoLaunch() {
   }
 }
 
+let networkInterval;
+function startNetworkPolling() {
+  if (networkInterval) clearInterval(networkInterval);
+  si.networkInterfaces().then(ifaces => {
+    const active = ifaces.find(i => !i.internal && i.operstate === 'up');
+    const defaultIface = active ? active.iface : '*';
+    
+    networkInterval = setInterval(async () => {
+      try {
+        const stats = await si.networkStats(defaultIface);
+        if (stats && stats.length > 0) {
+          const stat = stats[0];
+          if (mainWindow && !mainWindow.isDestroyed()) {
+            mainWindow.webContents.send('network-stats', {
+              download: Math.max(0, stat.rx_sec || 0),
+              upload: Math.max(0, stat.tx_sec || 0),
+              total_rx: stat.rx_bytes || 0,
+              total_tx: stat.tx_bytes || 0
+            });
+          }
+        }
+      } catch (e) {}
+    }, 1000);
+  }).catch(() => {});
+}
+
 function checkAlerts(category, usageData) {
-  if (!usageData || usageData.total === 0) return;
+  if (!usageData || usageData.total === 0 || !config.notifyOnLowData) return;
   
   const { remaining, total, percent } = usageData;
   
@@ -108,10 +137,10 @@ function checkAlerts(category, usageData) {
     }).show();
     state.notifiedCritical = true;
     state.notifiedWarn = true; // Avoid sending warning if we jump straight to critical
-  } else if (percent <= config.warnThresholdPercent && !state.notifiedWarn) {
+  } else if (percent <= config.lowDataThresholdPercent && !state.notifiedWarn) {
     new Notification({
       title: 'SLT Usage Warning',
-      body: `${category} data is below ${config.warnThresholdPercent}%. ${remaining.toFixed(1)}GB remaining.`,
+      body: `${category} data is below ${config.lowDataThresholdPercent}%. ${remaining.toFixed(1)}GB remaining.`,
       urgency: 'normal'
     }).show();
     state.notifiedWarn = true;
@@ -257,17 +286,19 @@ function createWindow() {
   loadConfig();
   updateAutoLaunch();
 
-  const { width: screenWidth } = screen.getPrimaryDisplay().workAreaSize;
+  const { width: screenWidth, height: screenHeight } = screen.getPrimaryDisplay().workAreaSize;
   const windowWidth = store.get('windowWidth', 320);
   const windowHeight = store.get('windowHeight', 420);
+  const windowX = store.get('windowX', screenWidth - windowWidth - 30);
+  const windowY = store.get('windowY', 30);
   const isAlwaysOnTop = store.get('alwaysOnTop', true);
   const theme = store.get('theme', 'dark');
 
   mainWindow = new BrowserWindow({
     width: windowWidth,
     height: windowHeight,
-    x: screenWidth - windowWidth - 30,
-    y: 30,
+    x: windowX,
+    y: windowY,
     frame: false,
     transparent: true,
     alwaysOnTop: isAlwaysOnTop,
@@ -293,6 +324,16 @@ function createWindow() {
       store.set('autoResize', false);
       mainWindow.webContents.send('setting-updated', { key: 'autoResize', value: false });
     }
+  });
+
+  mainWindow.on('moved', () => {
+    const [x, y] = mainWindow.getPosition();
+    store.set('windowX', x);
+    store.set('windowY', y);
+  });
+
+  mainWindow.on('closed', () => {
+    mainWindow = null;
   });
   
   startPolling();
@@ -377,6 +418,7 @@ if (!gotTheLock) {
   app.whenReady().then(() => {
     createWindow();
     createTray();
+    startNetworkPolling();
 
     app.on('activate', () => {
       if (BrowserWindow.getAllWindows().length === 0) {
@@ -478,6 +520,14 @@ ipcMain.on('close-settings', () => {
 
 ipcMain.on('open-external', (e, url) => {
   require('electron').shell.openExternal(url);
+});
+
+ipcMain.on('close-app', () => {
+  app.quit();
+});
+
+ipcMain.on('show-notification', (e, { title, body }) => {
+  new Notification({ title, body }).show();
 });
 
 ipcMain.on('resize-window', (event, { width, height }) => {

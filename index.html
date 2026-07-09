@@ -120,11 +120,22 @@
         letter-spacing: 0.5px;
         text-transform: uppercase;
         color: var(--text-muted);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        min-width: 0;
+      }
+      
+      #package-name-title {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
       }
 
       .actions {
         display: flex;
-        gap: 8px;
+        gap: 6px;
+        flex-shrink: 0;
         -webkit-app-region: no-drag;
       }
 
@@ -136,6 +147,10 @@
         padding: 4px;
         border-radius: 4px;
         transition: all 0.2s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
       }
 
       .icon-btn:hover {
@@ -467,6 +482,27 @@
       .logout-btn:hover {
         background: rgba(239, 68, 68, 0.4);
       }
+      
+      .network-monitor {
+        margin: 8px 12px;
+        padding: 8px;
+        background: var(--card-bg);
+        border: 1px solid var(--border-glass);
+        border-radius: 8px;
+      }
+      .network-stats {
+        display: flex;
+        justify-content: space-between;
+        font-size: 11px;
+        color: var(--text-muted);
+        margin-bottom: 4px;
+        font-family: monospace;
+      }
+      #network-chart {
+        width: 100%;
+        height: 40px;
+        display: block;
+      }
     </style>
   </head>
   <body>
@@ -483,9 +519,15 @@
             </svg>
           </button>
           <button class="icon-btn" id="settings-btn" title="Settings">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path>
               <circle cx="12" cy="12" r="3"></circle>
-              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+            </svg>
+          </button>
+          <button class="icon-btn" id="close-btn" title="Close">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
             </svg>
           </button>
         </div>
@@ -526,15 +568,132 @@
         window.api.requestRefresh();
       });
 
+      document.getElementById("settings-btn").addEventListener("click", () => {
+        window.api.openSettings();
+      });
 
+      document.getElementById("close-btn").addEventListener("click", () => {
+        window.api.closeApp();
+      });
 
-      let appConfig = { chartMode: 'bar', chartOrder: [], hiddenCharts: [] };
+      document.getElementById("login-btn").addEventListener("click", () => {
+        window.api.openTokenEntry();
+      });
+
+      let appConfig = { chartMode: 'bar', chartOrder: [], hiddenCharts: [], autoResize: true };
       let activeCardsData = [];
+      let lastNetworkStats = { total_rx: 0, total_tx: 0 };
+      
+      const formatSpeed = (bytes) => {
+        if (bytes === 0) return '0 B/s';
+        const k = 1024;
+        const sizes = ['B/s', 'KB/s', 'MB/s', 'GB/s'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+      };
+      
+      const networkHistory = [];
+      const MAX_HISTORY = 60;
+      
+      const renderNetworkChart = () => {
+        const canvas = document.querySelector('.network-chart-canvas');
+        if (!canvas) return;
+        
+        if (canvas.width !== canvas.offsetWidth) {
+          canvas.width = canvas.offsetWidth;
+        }
+        
+        const ctx = canvas.getContext('2d');
+        const width = canvas.width;
+        const height = canvas.height;
+        
+        ctx.clearRect(0, 0, width, height);
+        if (networkHistory.length === 0) return;
+        
+        let maxVal = 1024; // minimum 1 KB/s scale
+        networkHistory.forEach(d => {
+          if (d.upload > maxVal) maxVal = d.upload;
+          if (d.download > maxVal) maxVal = d.download;
+        });
+        
+        const step = width / (MAX_HISTORY - 1);
+        
+        // Upload (Green)
+        ctx.beginPath();
+        ctx.strokeStyle = '#10b981';
+        ctx.lineWidth = 1.5;
+        networkHistory.forEach((d, i) => {
+          const x = width - ((networkHistory.length - 1 - i) * step);
+          const y = height - (d.upload / maxVal * height);
+          if (i === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        });
+        ctx.stroke();
+        
+        // Download (Blue)
+        ctx.beginPath();
+        ctx.strokeStyle = '#3b82f6';
+        ctx.lineWidth = 1.5;
+        networkHistory.forEach((d, i) => {
+          const x = width - ((networkHistory.length - 1 - i) * step);
+          const y = height - (d.download / maxVal * height);
+          if (i === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        });
+        ctx.stroke();
+      };
+
+      if (window.api.onNetworkStats) {
+        window.api.onNetworkStats((stats) => {
+          lastNetworkStats = stats;
+          const upEl = document.getElementById('upload-speed');
+          const downEl = document.getElementById('download-speed');
+          if (upEl) upEl.innerText = formatSpeed(stats.upload);
+          if (downEl) downEl.innerText = formatSpeed(stats.download);
+          
+          networkHistory.push(stats);
+          if (networkHistory.length > MAX_HISTORY) networkHistory.shift();
+          renderNetworkChart();
+
+          if (appConfig.sessionIsActive) {
+            const startRx = appConfig.sessionStartTotalRx || 0;
+            const startTx = appConfig.sessionStartTotalTx || 0;
+            const limitBytes = (appConfig.sessionLimitMB || 0) * 1024 * 1024;
+            
+            if (limitBytes > 0) {
+              const currentRx = stats.total_rx;
+              const currentTx = stats.total_tx;
+              
+              const usedRx = currentRx >= startRx ? currentRx - startRx : currentRx;
+              const usedTx = currentTx >= startTx ? currentTx - startTx : currentTx;
+              const usedTotal = usedRx + usedTx;
+              const percent = Math.min(100, (usedTotal / limitBytes) * 100);
+              
+              if (usedTotal >= limitBytes && !appConfig.sessionNotified) {
+                window.api.showNotification({
+                  title: 'Data Limit Reached',
+                  body: `You have reached your custom limit of ${appConfig.sessionLimitMB} MB.`
+                });
+                window.api.updateSetting('sessionNotified', true);
+                appConfig.sessionNotified = true;
+              }
+              
+              const progressFill = document.querySelector('.session-progress-fill');
+              const usageText = document.getElementById('session-usage-text');
+              if (progressFill && usageText) {
+                progressFill.style.width = percent + '%';
+                progressFill.style.backgroundColor = getColor(100 - percent);
+                usageText.innerText = (usedTotal / (1024*1024)).toFixed(1) + ' / ' + appConfig.sessionLimitMB + ' MB';
+              }
+            }
+          }
+        });
+      }
 
       // Initialize settings
       window.api.getConfig().then(config => {
         if (config) {
-          appConfig = { chartMode: 'bar', chartOrder: [], hiddenCharts: [], ...config };
+          appConfig = { autoResize: true, chartMode: 'bar', chartOrder: [], hiddenCharts: [], ...config };
           if (!appConfig.hiddenCharts) appConfig.hiddenCharts = [];
           if (!appConfig.chartOrder) appConfig.chartOrder = [];
           
@@ -580,16 +739,18 @@
       }
 
       const createCard = (d) => {
-        let { name, used, limit, remaining, percent, unit } = d;
-        if (remaining === null || remaining === undefined) remaining = limit - used;
-        if (percent === null || percent === undefined) percent = limit > 0 ? (remaining / limit) * 100 : 0;
-        if (remaining < 0) { remaining = 0; percent = 0; }
+        let { name, used, limit, remaining, percent, unit, type } = d;
+        if (type !== 'network' && type !== 'session') {
+          if (remaining === null || remaining === undefined) remaining = limit - used;
+          if (percent === null || percent === undefined) percent = limit > 0 ? (remaining / limit) * 100 : 0;
+          if (remaining < 0) { remaining = 0; percent = 0; }
+        }
 
         const card = document.createElement("div");
         card.className = "usage-card";
         card.draggable = true;
         card.dataset.name = name;
-        if (appConfig.chartMode === 'pie') card.classList.add('pie-card');
+        if (appConfig.chartMode === 'pie' && type !== 'network' && type !== 'session') card.classList.add('pie-card');
 
         card.addEventListener('dragstart', (e) => {
           draggedCard = card;
@@ -618,9 +779,96 @@
           }
         });
 
-        const color = getColor(percent);
+        const color = type === 'network' ? '#3b82f6' : (type === 'session' ? 'var(--color-blue)' : getColor(percent));
 
-        if (appConfig.chartMode === 'pie') {
+        if (type === 'session') {
+          card.innerHTML = `
+            <button class="hide-btn" title="Hide">✕</button>
+            <div class="card-header" style="margin-bottom: 2px;">
+              <span class="card-title">${name}</span>
+            </div>
+            <div style="display:flex; gap: 8px; margin: 4px 0;">
+              <input type="number" id="session-limit-input" style="flex: 1; background: var(--input-bg); border: 1px solid var(--border-glass); color: var(--text-main); font-size: 11px; padding: 2px 4px; border-radius: 4px;" placeholder="MB" value="${appConfig.sessionLimitMB || 500}">
+              <button id="session-play-btn" style="background: var(--color-green); color: white; border: none; border-radius: 4px; padding: 2px 8px; cursor: pointer; font-size: 10px;">Play</button>
+              <button id="session-stop-btn" style="background: var(--color-red); color: white; border: none; border-radius: 4px; padding: 2px 8px; cursor: pointer; font-size: 10px;">Stop</button>
+            </div>
+            <div class="progress-bar-bg" style="height: 6px; margin-top: 4px;">
+              <div class="progress-bar-fill session-progress-fill" style="width: 0%; background-color: var(--color-blue)"></div>
+            </div>
+            <div style="font-size: 10px; color: var(--text-muted); text-align: right; margin-top: 2px;">
+              <span id="session-usage-text">0.0 / ${appConfig.sessionLimitMB || 500} MB</span>
+            </div>
+          `;
+          
+          setTimeout(() => {
+            const playBtn = card.querySelector('#session-play-btn');
+            const stopBtn = card.querySelector('#session-stop-btn');
+            const input = card.querySelector('#session-limit-input');
+            
+            if (appConfig.sessionIsActive) {
+              input.disabled = true;
+              playBtn.style.opacity = '0.5';
+            } else {
+              stopBtn.style.opacity = '0.5';
+            }
+            
+            playBtn.onclick = () => {
+              const mb = parseInt(input.value) || 0;
+              if (mb <= 0) return;
+              
+              appConfig.sessionLimitMB = mb;
+              appConfig.sessionIsActive = true;
+              appConfig.sessionStartTotalRx = lastNetworkStats.total_rx || 0;
+              appConfig.sessionStartTotalTx = lastNetworkStats.total_tx || 0;
+              appConfig.sessionNotified = false;
+              
+              window.api.updateSetting('sessionLimitMB', mb);
+              window.api.updateSetting('sessionIsActive', true);
+              window.api.updateSetting('sessionStartTotalRx', appConfig.sessionStartTotalRx);
+              window.api.updateSetting('sessionStartTotalTx', appConfig.sessionStartTotalTx);
+              window.api.updateSetting('sessionNotified', false);
+              
+              input.disabled = true;
+              playBtn.style.opacity = '0.5';
+              stopBtn.style.opacity = '1';
+            };
+            
+            stopBtn.onclick = () => {
+              appConfig.sessionIsActive = false;
+              window.api.updateSetting('sessionIsActive', false);
+              
+              input.disabled = false;
+              playBtn.style.opacity = '1';
+              stopBtn.style.opacity = '0.5';
+              
+              const progressFill = card.querySelector('.session-progress-fill');
+              if (progressFill) {
+                progressFill.style.width = '0%';
+                progressFill.style.backgroundColor = 'var(--color-blue)';
+              }
+              card.querySelector('#session-usage-text').innerText = '0.0 / ' + (appConfig.sessionLimitMB || 500) + ' MB';
+            };
+            
+            input.onchange = (e) => {
+              const mb = parseInt(e.target.value) || 0;
+              appConfig.sessionLimitMB = mb;
+              window.api.updateSetting('sessionLimitMB', mb);
+              card.querySelector('#session-usage-text').innerText = '0.0 / ' + mb + ' MB';
+            };
+          }, 0);
+        } else if (type === 'network') {
+          card.innerHTML = `
+            <button class="hide-btn" title="Hide">✕</button>
+            <div class="card-header" style="margin-bottom: 2px;">
+              <span class="card-title">${name}</span>
+            </div>
+            <div class="network-stats" style="display:flex; justify-content:space-between; font-size:10px; color:var(--text-muted); font-family:monospace;">
+              <div><span style="color:#10b981">▲</span> <span id="upload-speed">0 B/s</span></div>
+              <div><span style="color:#3b82f6">▼</span> <span id="download-speed">0 B/s</span></div>
+            </div>
+            <canvas class="network-chart-canvas" height="30" style="width:100%; display:block; margin-top:2px;"></canvas>
+          `;
+        } else if (appConfig.chartMode === 'pie') {
           const c = 2 * Math.PI * 16;
           const dashArray = `${(Math.max(0, Math.min(100, percent)) / 100) * c} ${c}`;
           card.innerHTML = `
@@ -696,6 +944,7 @@
         });
         
 
+        renderNetworkChart();
         
         if (appConfig.autoResize !== false) {
           document.getElementById('cards-container').style.overflowY = 'hidden';
@@ -764,6 +1013,9 @@
               });
             }
           });
+          
+          activeCardsData.push({ name: 'Network Traffic', type: 'network' });
+          activeCardsData.push({ name: 'Custom Session Limit', type: 'session' });
           
           renderCards();
           

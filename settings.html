@@ -249,6 +249,21 @@
         </label>
       </div>
 
+      <div class="settings-group-title">Alerts</div>
+      <div class="settings-section">
+        <label>Low Data Notifications</label>
+        <label class="switch">
+          <input type="checkbox" id="notify-low-toggle" checked />
+          <span class="slider"></span>
+        </label>
+      </div>
+      <div class="settings-section">
+        <label>Warning Threshold (%)</label>
+        <input type="number" id="threshold-input" value="20" min="1" max="99" />
+      </div>
+
+      <div class="settings-divider"></div>
+      
       <div class="settings-group-title">Data Visibility</div>
       <div class="settings-section" style="flex-direction: column; align-items: flex-start; gap: 8px;">
         <label>Hidden Charts (Click to restore)</label>
@@ -291,6 +306,8 @@
           document.getElementById('refresh-input').value = config.refreshMinutes || 5;
           document.getElementById('ontop-toggle').checked = config.alwaysOnTop !== false;
           document.getElementById('autoresize-toggle').checked = config.autoResize !== false;
+          document.getElementById('notify-low-toggle').checked = config.notifyOnLowData !== false;
+          document.getElementById('threshold-input').value = config.lowDataThresholdPercent || 20;
           
           if (config.theme) {
             document.getElementById('theme-select').value = config.theme;
@@ -364,6 +381,17 @@
 
       document.getElementById('autoresize-toggle').addEventListener('change', (e) => {
         window.api.updateSetting('autoResize', e.target.checked);
+      });
+
+      document.getElementById('notify-low-toggle').addEventListener('change', (e) => {
+        window.api.updateSetting('notifyOnLowData', e.target.checked);
+      });
+
+      document.getElementById('threshold-input').addEventListener('change', (e) => {
+        let val = parseInt(e.target.value);
+        if (val < 1) val = 1;
+        if (val > 99) val = 99;
+        window.api.updateSetting('lowDataThresholdPercent', val);
       });
 
       document.getElementById('close-settings-btn').addEventListener('click', () => {

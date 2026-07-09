@@ -13,5 +13,8 @@ contextBridge.exposeInMainWorld('api', {
   onSettingUpdated: (callback) => ipcRenderer.on('setting-updated', (_event, data) => callback(data)),
   openSettings: () => ipcRenderer.send('open-settings'),
   closeSettings: () => ipcRenderer.send('close-settings'),
-  openExternal: (url) => ipcRenderer.send('open-external', url)
+  openExternal: (url) => ipcRenderer.send('open-external', url),
+  onNetworkStats: (callback) => ipcRenderer.on('network-stats', (_event, data) => callback(data)),
+  closeApp: () => ipcRenderer.send('close-app'),
+  showNotification: (options) => ipcRenderer.send('show-notification', options)
 });

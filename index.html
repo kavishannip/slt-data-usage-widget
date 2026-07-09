@@ -112,6 +112,23 @@
         background: rgba(255, 255, 255, 0.1);
         color: var(--text-main);
       }
+      
+      #cards-container {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        overflow-y: auto;
+        padding-right: 4px;
+      }
+      
+      #cards-container::-webkit-scrollbar {
+        width: 4px;
+      }
+      
+      #cards-container::-webkit-scrollbar-thumb {
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 4px;
+      }
 
       .usage-card {
         background: var(--card-bg);
@@ -120,6 +137,7 @@
         display: flex;
         flex-direction: column;
         gap: 8px;
+        flex-shrink: 0;
       }
 
       .card-header {
@@ -492,8 +510,12 @@
           
           if (pkgInfo && pkgInfo.usageDetails && Array.isArray(pkgInfo.usageDetails)) {
             pkgInfo.usageDetails.forEach((detail) => {
+              let detailName = detail.name;
+              if (detailName === 'Total (Standard + Free)') {
+                detailName = 'Total';
+              }
               container.appendChild(createCard(
-                detail.name,
+                detailName,
                 detail.used,
                 detail.limit,
                 detail.remaining,

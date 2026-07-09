@@ -159,7 +159,11 @@ async function fetchUsage() {
       
       if (bundle.my_package_info && bundle.my_package_info.usageDetails) {
         bundle.my_package_info.usageDetails.forEach((detail) => {
-          checkAlerts(detail.name, {
+          let detailName = detail.name;
+          if (detailName === 'Total (Standard + Free)') {
+            detailName = 'Total';
+          }
+          checkAlerts(detailName, {
             remaining: parseFloat(detail.remaining || 0),
             total: parseFloat(detail.limit || 0),
             percent: parseFloat(detail.percentage || 0)

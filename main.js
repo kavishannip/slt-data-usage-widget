@@ -325,6 +325,7 @@ function createWindow() {
     resizable: true,
     minWidth: 320,
     minHeight: 180,
+    icon: path.join(__dirname, 'build', 'icon.ico'),
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
@@ -373,6 +374,7 @@ function openTokenWindow() {
     modal: false,
     autoHideMenuBar: true,
     title: "SLT Login",
+    icon: path.join(__dirname, 'build', 'icon.ico'),
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true
@@ -517,6 +519,7 @@ ipcMain.on('open-settings', () => {
     transparent: true,
     alwaysOnTop: store.get('alwaysOnTop', true),
     resizable: true,
+    icon: path.join(__dirname, 'build', 'icon.ico'),
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,

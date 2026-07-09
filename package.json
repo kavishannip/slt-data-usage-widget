@@ -9,9 +9,10 @@
   },
   "build": {
     "appId": "com.slt.usagewidget",
-    "productName": "SLT Usage Widget",
+    "productName": "SLTDU Widget",
     "win": {
-      "target": "nsis"
+      "target": "nsis",
+      "icon": "build/icon.ico"
     },
     "nsis": {
       "oneClick": false,

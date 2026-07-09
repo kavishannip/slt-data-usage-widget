@@ -789,8 +789,12 @@
             </div>
             <div style="display:flex; gap: 8px; margin: 4px 0;">
               <input type="number" id="session-limit-input" style="flex: 1; background: var(--input-bg); border: 1px solid var(--border-glass); color: var(--text-main); font-size: 11px; padding: 2px 4px; border-radius: 4px;" placeholder="MB" value="${appConfig.sessionLimitMB || 500}">
-              <button id="session-play-btn" style="background: var(--color-green); color: white; border: none; border-radius: 4px; padding: 2px 8px; cursor: pointer; font-size: 10px;">Play</button>
-              <button id="session-stop-btn" style="background: var(--color-red); color: white; border: none; border-radius: 4px; padding: 2px 8px; cursor: pointer; font-size: 10px;">Stop</button>
+              <button id="session-toggle-btn" style="background: ${appConfig.sessionIsActive ? 'var(--color-red)' : 'var(--color-green)'}; color: white; border: none; border-radius: 4px; padding: 2px 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; width: 32px;">
+                ${appConfig.sessionIsActive 
+                  ? '<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12"></rect></svg>'
+                  : '<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>'
+                }
+              </button>
             </div>
             <div class="progress-bar-bg" style="height: 6px; margin-top: 4px;">
               <div class="progress-bar-fill session-progress-fill" style="width: 0%; background-color: var(--color-blue)"></div>
@@ -801,52 +805,50 @@
           `;
           
           setTimeout(() => {
-            const playBtn = card.querySelector('#session-play-btn');
-            const stopBtn = card.querySelector('#session-stop-btn');
+            const toggleBtn = card.querySelector('#session-toggle-btn');
             const input = card.querySelector('#session-limit-input');
             
             if (appConfig.sessionIsActive) {
               input.disabled = true;
-              playBtn.style.opacity = '0.5';
-            } else {
-              stopBtn.style.opacity = '0.5';
             }
             
-            playBtn.onclick = () => {
-              const mb = parseInt(input.value) || 0;
-              if (mb <= 0) return;
-              
-              appConfig.sessionLimitMB = mb;
-              appConfig.sessionIsActive = true;
-              appConfig.sessionStartTotalRx = lastNetworkStats.total_rx || 0;
-              appConfig.sessionStartTotalTx = lastNetworkStats.total_tx || 0;
-              appConfig.sessionNotified = false;
-              
-              window.api.updateSetting('sessionLimitMB', mb);
-              window.api.updateSetting('sessionIsActive', true);
-              window.api.updateSetting('sessionStartTotalRx', appConfig.sessionStartTotalRx);
-              window.api.updateSetting('sessionStartTotalTx', appConfig.sessionStartTotalTx);
-              window.api.updateSetting('sessionNotified', false);
-              
-              input.disabled = true;
-              playBtn.style.opacity = '0.5';
-              stopBtn.style.opacity = '1';
-            };
-            
-            stopBtn.onclick = () => {
-              appConfig.sessionIsActive = false;
-              window.api.updateSetting('sessionIsActive', false);
-              
-              input.disabled = false;
-              playBtn.style.opacity = '1';
-              stopBtn.style.opacity = '0.5';
-              
-              const progressFill = card.querySelector('.session-progress-fill');
-              if (progressFill) {
-                progressFill.style.width = '0%';
-                progressFill.style.backgroundColor = 'var(--color-blue)';
+            toggleBtn.onclick = () => {
+              if (appConfig.sessionIsActive) {
+                // Stop it
+                appConfig.sessionIsActive = false;
+                window.api.updateSetting('sessionIsActive', false);
+                
+                input.disabled = false;
+                toggleBtn.style.background = 'var(--color-green)';
+                toggleBtn.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>';
+                
+                const progressFill = card.querySelector('.session-progress-fill');
+                if (progressFill) {
+                  progressFill.style.width = '0%';
+                  progressFill.style.backgroundColor = 'var(--color-blue)';
+                }
+                card.querySelector('#session-usage-text').innerText = '0.0 / ' + (appConfig.sessionLimitMB || 500) + ' MB';
+              } else {
+                // Play it
+                const mb = parseInt(input.value) || 0;
+                if (mb <= 0) return;
+                
+                appConfig.sessionLimitMB = mb;
+                appConfig.sessionIsActive = true;
+                appConfig.sessionStartTotalRx = lastNetworkStats.total_rx || 0;
+                appConfig.sessionStartTotalTx = lastNetworkStats.total_tx || 0;
+                appConfig.sessionNotified = false;
+                
+                window.api.updateSetting('sessionLimitMB', mb);
+                window.api.updateSetting('sessionIsActive', true);
+                window.api.updateSetting('sessionStartTotalRx', appConfig.sessionStartTotalRx);
+                window.api.updateSetting('sessionStartTotalTx', appConfig.sessionStartTotalTx);
+                window.api.updateSetting('sessionNotified', false);
+                
+                input.disabled = true;
+                toggleBtn.style.background = 'var(--color-red)';
+                toggleBtn.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12"></rect></svg>';
               }
-              card.querySelector('#session-usage-text').innerText = '0.0 / ' + (appConfig.sessionLimitMB || 500) + ' MB';
             };
             
             input.onchange = (e) => {
@@ -1015,7 +1017,7 @@
           });
           
           activeCardsData.push({ name: 'Network Traffic', type: 'network' });
-          activeCardsData.push({ name: 'Custom Session Limit', type: 'session' });
+          activeCardsData.push({ name: 'Set Data Limit', type: 'session' });
           
           renderCards();
           

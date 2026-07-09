@@ -6,16 +6,40 @@
     <title>SLT Usage Widget</title>
     <style>
       :root {
+        --color-green: #10b981;
+        --color-amber: #f59e0b;
+        --color-red: #ef4444;
+        --radius: 16px;
+      }
+      
+      [data-theme="dark"], :root {
         --bg-glass: rgba(20, 20, 25, 0.75);
         --border-glass: rgba(255, 255, 255, 0.1);
         --text-main: #f0f0f0;
         --text-muted: #a0a0a5;
-
-        --color-green: #10b981;
-        --color-amber: #f59e0b;
-        --color-red: #ef4444;
-
-        --radius: 16px;
+        --popup-bg: rgba(30, 30, 35, 0.95);
+        --card-bg: rgba(0, 0, 0, 0.2);
+        --input-bg: rgba(0, 0, 0, 0.3);
+      }
+      
+      [data-theme="light"] {
+        --bg-glass: rgba(255, 255, 255, 0.75);
+        --border-glass: rgba(0, 0, 0, 0.1);
+        --text-main: #1f2937;
+        --text-muted: #4b5563;
+        --popup-bg: rgba(240, 240, 245, 0.95);
+        --card-bg: rgba(255, 255, 255, 0.4);
+        --input-bg: rgba(255, 255, 255, 0.5);
+      }
+      
+      [data-theme="blue"] {
+        --bg-glass: rgba(15, 23, 42, 0.75);
+        --border-glass: rgba(56, 189, 248, 0.2);
+        --text-main: #f8fafc;
+        --text-muted: #94a3b8;
+        --popup-bg: rgba(15, 23, 42, 0.95);
+        --card-bg: rgba(30, 41, 59, 0.5);
+        --input-bg: rgba(30, 41, 59, 0.7);
       }
 
       * {
@@ -90,7 +114,7 @@
       }
 
       .usage-card {
-        background: rgba(0, 0, 0, 0.2);
+        background: var(--card-bg);
         border-radius: 8px;
         padding: 10px 12px;
         display: flex;
@@ -181,7 +205,7 @@
         position: absolute;
         top: 50px;
         right: 16px;
-        background: rgba(30, 30, 35, 0.95);
+        background: var(--popup-bg);
         border: 1px solid var(--border-glass);
         border-radius: 8px;
         padding: 12px;
@@ -202,13 +226,30 @@
       
       .settings-section input[type="number"] {
         width: 45px;
-        background: rgba(0,0,0,0.3);
+        background: var(--input-bg);
         border: 1px solid var(--border-glass);
         color: var(--text-main);
         padding: 4px;
         border-radius: 4px;
         font-size: 11px;
         text-align: right;
+      }
+      
+      .theme-select {
+        background: var(--input-bg);
+        border: 1px solid var(--border-glass);
+        color: var(--text-main);
+        padding: 4px;
+        border-radius: 4px;
+        font-size: 11px;
+        width: 90px;
+        cursor: pointer;
+        outline: none;
+      }
+      
+      .theme-select option {
+        background: var(--popup-bg);
+        color: var(--text-main);
       }
       
       .settings-divider {
@@ -243,7 +284,7 @@
         width: 14px;
         left: 2px;
         bottom: 2px;
-        background-color: white;
+        background-color: var(--text-main);
         transition: .2s;
         border-radius: 50%;
       }
@@ -288,20 +329,11 @@
   <body>
     <div class="widget-container">
       <div class="header">
-        <h1>MySLT Usage</h1>
+        <h1 id="package-name-title">MySLT Usage</h1>
         <div class="actions">
           <button class="icon-btn" id="refresh-btn" title="Refresh">
-            <svg
-              width="14"
-              height="14"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-            >
-              <path
-                d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"
-              />
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/>
             </svg>
           </button>
           <button class="icon-btn" id="settings-btn" title="Settings">
@@ -322,52 +354,22 @@
       </div>
 
       <div id="cards-container">
-        <!-- Standard -->
-        <div class="usage-card">
-          <div class="card-header">
-            <span class="card-title">Standard</span>
-            <span class="card-value" id="val-standard">-- / -- GB</span>
-          </div>
-          <div class="progress-bar-bg">
-            <div
-              class="progress-bar-fill"
-              id="bar-standard"
-              style="width: 0%"
-            ></div>
-          </div>
-        </div>
-
-        <!-- Bonus -->
-        <div class="usage-card">
-          <div class="card-header">
-            <span class="card-title">Bonus</span>
-            <span class="card-value" id="val-bonus">-- / -- GB</span>
-          </div>
-          <div class="progress-bar-bg">
-            <div
-              class="progress-bar-fill"
-              id="bar-bonus"
-              style="width: 0%"
-            ></div>
-          </div>
-        </div>
-
-        <!-- VAS -->
-        <div class="usage-card">
-          <div class="card-header">
-            <span class="card-title">VAS</span>
-            <span class="card-value" id="val-vas">-- / -- GB</span>
-          </div>
-          <div class="progress-bar-bg">
-            <div class="progress-bar-fill" id="bar-vas" style="width: 0%"></div>
-          </div>
-        </div>
+        <!-- Dynamically generated cards will go here -->
       </div>
       
       <div id="settings-popup" class="settings-popup">
         <div class="settings-header">
           <span>Settings</span>
           <button class="icon-btn" id="close-settings-btn" style="padding:0">✕</button>
+        </div>
+        
+        <div class="settings-section">
+          <label>Theme</label>
+          <select id="theme-select" class="theme-select">
+            <option value="dark">Dark</option>
+            <option value="light">Light</option>
+            <option value="blue">Midnight Blue</option>
+          </select>
         </div>
         
         <div class="settings-section">
@@ -397,16 +399,7 @@
         return "var(--color-red)";
       };
 
-      const updateCard = (id, used, total) => {
-        const remaining = total - used;
-        const percent = total > 0 ? (remaining / total) * 100 : 0;
 
-        document.getElementById(`val-${id}`).innerText =
-          `${remaining.toFixed(1)} / ${total.toFixed(1)} GB`;
-        const bar = document.getElementById(`bar-${id}`);
-        bar.style.width = `${percent}%`;
-        bar.style.backgroundColor = getColor(percent);
-      };
 
       document.getElementById("refresh-btn").addEventListener("click", () => {
         window.api.requestRefresh();
@@ -417,7 +410,17 @@
         if (config) {
           document.getElementById('refresh-input').value = config.refreshMinutes;
           document.getElementById('ontop-toggle').checked = config.alwaysOnTop;
+          if (config.theme) {
+            document.getElementById('theme-select').value = config.theme;
+            document.documentElement.setAttribute('data-theme', config.theme);
+          }
         }
+      });
+      
+      document.getElementById('theme-select').addEventListener('change', (e) => {
+        const theme = e.target.value;
+        document.documentElement.setAttribute('data-theme', theme);
+        window.api.updateSetting('theme', theme);
       });
 
       document.getElementById('refresh-input').addEventListener('change', (e) => {
@@ -447,29 +450,83 @@
         window.api.openTokenEntry();
       });
 
+      const createCard = (name, used, limit, remaining, percent, unit) => {
+        if (remaining === null || remaining === undefined) remaining = limit - used;
+        if (percent === null || percent === undefined) percent = limit > 0 ? (remaining / limit) * 100 : 0;
+        
+        if (remaining < 0) {
+            remaining = 0;
+            percent = 0;
+        }
+
+        const card = document.createElement("div");
+        card.className = "usage-card";
+        card.innerHTML = `
+          <div class="card-header">
+            <span class="card-title">${name}</span>
+            <span class="card-value">${parseFloat(remaining).toFixed(1)} / ${parseFloat(limit).toFixed(1)} ${unit || 'GB'}</span>
+          </div>
+          <div class="progress-bar-bg">
+            <div class="progress-bar-fill" style="width: ${Math.max(0, Math.min(100, percent))}%; background-color: ${getColor(percent)}"></div>
+          </div>
+          <div style="font-size: 10px; color: var(--text-muted); text-align: right; margin-top: -4px;">
+            Used: ${parseFloat(used).toFixed(1)} ${unit || 'GB'}
+          </div>
+        `;
+        return card;
+      };
+
       window.api.onData((data) => {
         document.body.classList.remove("logged-out");
         
         if (data && data.dataBundle) {
           const bundle = data.dataBundle;
-          const parseUsage = (summary) =>
-            summary
-              ? {
-                  used: parseFloat(summary.used),
-                  total: parseFloat(summary.limit),
-                }
-              : { used: 0, total: 0 };
+          const pkgInfo = bundle.my_package_info;
+          
+          if (pkgInfo && pkgInfo.package_name) {
+            document.getElementById("package-name-title").innerText = pkgInfo.package_name;
+          }
 
-          const standard = parseUsage(bundle.my_package_summary);
-          const bonus = parseUsage(bundle.bonus_data_summary);
-          const vas = parseUsage(bundle.vas_data_summary);
+          const container = document.getElementById("cards-container");
+          container.innerHTML = "";
+          
+          if (pkgInfo && pkgInfo.usageDetails && Array.isArray(pkgInfo.usageDetails)) {
+            pkgInfo.usageDetails.forEach((detail) => {
+              container.appendChild(createCard(
+                detail.name,
+                detail.used,
+                detail.limit,
+                detail.remaining,
+                detail.percentage,
+                detail.volume_unit
+              ));
+            });
+          }
 
-          updateCard("standard", standard.used, standard.total);
-          updateCard("bonus", bonus.used, bonus.total);
-          updateCard("vas", vas.used, vas.total);
-
+          const summaryKeys = [
+            'bonus_data_summary',
+            'free_data_summary',
+            'vas_data_summary',
+            'extra_gb_data_summary'
+          ];
+          
+          summaryKeys.forEach(key => {
+            const summary = bundle[key];
+            if (summary && summary.limit !== undefined && summary.used !== undefined) {
+              const name = key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()).replace(' Summary', '');
+              container.appendChild(createCard(
+                name,
+                summary.used,
+                summary.limit,
+                null,
+                null,
+                summary.volume_unit
+              ));
+            }
+          });
+          
           document.getElementById("footer-text").innerText =
-            `Reported: ${bundle.reported_time || "Unknown"}`;
+            `Reported: ${bundle.reported_time || pkgInfo?.reported_time || "Unknown"}`;
         } else {
           const now = new Date();
           document.getElementById("footer-text").innerText =

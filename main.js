@@ -564,8 +564,13 @@ ipcMain.on('update-setting', (event, { key, value }) => {
   store.set(key, value);
   loadConfig();
   
-  if (key === 'alwaysOnTop' && mainWindow) {
-    mainWindow.setAlwaysOnTop(value);
+  if (key === 'alwaysOnTop') {
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.setAlwaysOnTop(value);
+    }
+    if (settingsWindow && !settingsWindow.isDestroyed()) {
+      settingsWindow.setAlwaysOnTop(value);
+    }
   }
   if (key === 'refreshMinutes') {
     startPolling();

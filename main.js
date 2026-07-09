@@ -257,8 +257,8 @@ function createWindow() {
   updateAutoLaunch();
 
   const { width: screenWidth } = screen.getPrimaryDisplay().workAreaSize;
-  const windowWidth = 320;
-  const windowHeight = 420;
+  const windowWidth = store.get('windowWidth', 320);
+  const windowHeight = store.get('windowHeight', 420);
   const isAlwaysOnTop = store.get('alwaysOnTop', true);
 
   mainWindow = new BrowserWindow({
@@ -282,6 +282,16 @@ function createWindow() {
 
   mainWindow.setVisibleOnAllWorkspaces(true);
   mainWindow.loadFile('index.html');
+  
+  mainWindow.on('resize', () => {
+    if (!isProgrammaticResize) {
+      const [width, height] = mainWindow.getSize();
+      store.set('windowWidth', width);
+      store.set('windowHeight', height);
+      store.set('autoResize', false);
+      mainWindow.webContents.send('setting-updated', { key: 'autoResize', value: false });
+    }
+  });
   
   startPolling();
 }
@@ -426,12 +436,22 @@ ipcMain.handle('get-config', () => {
   };
 });
 
+let isProgrammaticResize = false;
+
 ipcMain.on('resize-window', (event, { width, height }) => {
   if (mainWindow) {
     const { screen } = require('electron');
     const { height: screenHeight } = screen.getPrimaryDisplay().workAreaSize;
     let finalHeight = Math.min(height, screenHeight - 60);
-    mainWindow.setSize(width, finalHeight, false);
+    
+    // Preserve the user's customized width instead of snapping back to 320
+    const [currentWidth, currentHeight] = mainWindow.getSize();
+    // Only resize if height is different to prevent flickering
+    if (currentHeight !== finalHeight) {
+      isProgrammaticResize = true;
+      mainWindow.setSize(currentWidth, finalHeight, false);
+      setTimeout(() => { isProgrammaticResize = false; }, 200);
+    }
   }
 });
 

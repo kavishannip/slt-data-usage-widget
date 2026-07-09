@@ -568,6 +568,17 @@
         }
       });
 
+      window.api.onSettingUpdated((data) => {
+        if (data.key === 'autoResize') {
+          appConfig.autoResize = data.value;
+          document.getElementById('autoresize-toggle').checked = data.value;
+          if (!data.value) {
+            document.getElementById('cards-container').style.overflowY = 'auto';
+            document.getElementById('cards-container').style.paddingRight = '4px';
+          }
+        }
+      });
+
       document.getElementById("settings-btn").addEventListener("click", () => {
         document.getElementById("settings-popup").classList.toggle("show");
       });

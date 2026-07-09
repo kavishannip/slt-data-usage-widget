@@ -9,5 +9,6 @@ contextBridge.exposeInMainWorld('api', {
   logout: () => ipcRenderer.send('logout'),
   getConfig: () => ipcRenderer.invoke('get-config'),
   updateSetting: (key, value) => ipcRenderer.send('update-setting', { key, value }),
-  resizeWindow: (width, height) => ipcRenderer.send('resize-window', { width, height })
+  resizeWindow: (width, height) => ipcRenderer.send('resize-window', { width, height }),
+  onSettingUpdated: (callback) => ipcRenderer.on('setting-updated', (_event, data) => callback(data))
 });

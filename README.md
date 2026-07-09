@@ -5,7 +5,7 @@
 </div>
 
 <p align="center">
-  Track your Sri Lanka Telecom (SLT) broadband data usage right from your desktop. Stay on top of your standard, free, and bonus data with beautiful real-time visualizations!
+  Track your Sri Lanka Telecom (SLT) broadband data usage right from your desktop.
 </p>
 
 ---

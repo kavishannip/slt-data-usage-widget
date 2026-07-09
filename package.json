@@ -1,0 +1,33 @@
+{
+  "name": "slt-usage-widget",
+  "version": "1.0.0",
+  "description": "SLT Data Usage Widget",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder"
+  },
+  "build": {
+    "appId": "com.slt.usagewidget",
+    "productName": "SLT Usage Widget",
+    "win": {
+      "target": "nsis"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    }
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "electron": "^30.0.0",
+    "electron-builder": "^24.9.1"
+  },
+  "dependencies": {
+    "auto-launch": "^5.0.6",
+    "electron-store": "^8.2.0"
+  }
+}

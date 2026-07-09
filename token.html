@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Enter Token</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; padding: 20px; background: #1a1a1a; color: #fff; margin: 0; }
+    h2 { margin-top: 0; font-size: 20px; margin-bottom: 20px; }
+    .instructions { background: #2a2a2a; padding: 15px; border-radius: 8px; font-size: 14px; margin-bottom: 20px; border: 1px solid #333; line-height: 1.5; }
+    .instructions ol { margin-left: 20px; margin-bottom: 0; padding-left: 0; }
+    .instructions li { margin-bottom: 8px; }
+    .instructions li:last-child { margin-bottom: 0; }
+    .form-group { margin-bottom: 15px; }
+    label { display: block; margin-bottom: 5px; font-weight: 500; font-size: 14px; color: #ccc; }
+    input { width: 100%; box-sizing: border-box; padding: 10px; border-radius: 4px; border: 1px solid #444; background: #222; color: #fff; font-size: 14px; transition: border-color 0.2s; }
+    input:focus { outline: none; border-color: #10b981; }
+    button { background: #10b981; color: white; border: none; padding: 12px 15px; border-radius: 4px; cursor: pointer; font-weight: bold; width: 100%; font-size: 14px; transition: background 0.2s; margin-top: 10px; }
+    button:hover { background: #059669; }
+    code { background: #000; padding: 2px 5px; border-radius: 4px; font-family: monospace; font-size: 13px; color: #10b981; }
+  </style>
+</head>
+<body>
+  <h2>Authentication Required</h2>
+  
+  <div class="instructions">
+    <strong style="display:block;margin-bottom:10px;">How to get your token:</strong>
+    <ol>
+      <li>Log into <code>myslt.slt.lk</code> in your normal browser</li>
+      <li>Open Developer Tools (F12) &rarr; Network tab</li>
+      <li>Filter by <code>UsageSummary</code></li>
+      <li>Reload the page on MySLT</li>
+      <li>Click the <code>UsageSummary</code> request, go to Headers</li>
+      <li>Copy the value of the <code>Authorization</code> header</li>
+    </ol>
+  </div>
+
+  <div class="form-group">
+    <label>Subscriber ID (Your SLT Phone Number)</label>
+    <input type="text" id="subscriberID" placeholder="e.g. 94112345678">
+  </div>
+  
+  <div class="form-group">
+    <label>Authorization Header</label>
+    <input type="text" id="token" placeholder="Bearer eyJhbG...">
+  </div>
+
+  <button id="save-btn">Save & Refresh</button>
+
+  <script>
+    document.getElementById('save-btn').addEventListener('click', () => {
+      const subscriberID = document.getElementById('subscriberID').value.trim();
+      const token = document.getElementById('token').value.trim();
+      if (subscriberID && token) {
+        window.api.saveToken(subscriberID, token);
+      } else {
+        alert('Please fill in both fields.');
+      }
+    });
+  </script>
+</body>
+</html>

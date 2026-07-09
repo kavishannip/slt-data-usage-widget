@@ -11,6 +11,49 @@ let tray = null;
 let config;
 let authExpired = false;
 let refreshInterval;
+let isRefreshing = false;
+
+function attemptHiddenRefresh() {
+  if (isRefreshing) return;
+  isRefreshing = true;
+
+  const { session } = require('electron');
+  const hiddenWin = new BrowserWindow({
+    show: false,
+    webPreferences: { nodeIntegration: false, contextIsolation: true }
+  });
+
+  const filter = { urls: ['*://omniscapp.slt.lk/*'] };
+  let success = false;
+  
+  session.defaultSession.webRequest.onBeforeSendHeaders(filter, (details, callback) => {
+    if (details.requestHeaders['Authorization']) {
+      const auth = details.requestHeaders['Authorization'];
+      const headers = store.get('headers', { 'X-IBM-Client-Id': 'b7402e9d66808f762ccedbe42c20668e' });
+      headers.Authorization = auth;
+      store.set('headers', headers);
+      
+      loadConfig();
+      success = true;
+      
+      session.defaultSession.webRequest.onBeforeSendHeaders(filter, null);
+      if (!hiddenWin.isDestroyed()) hiddenWin.close();
+      isRefreshing = false;
+      fetchUsage();
+    }
+    callback({ requestHeaders: details.requestHeaders });
+  });
+
+  hiddenWin.loadURL('https://myslt.slt.lk/');
+  
+  setTimeout(() => {
+    if (!success) {
+      session.defaultSession.webRequest.onBeforeSendHeaders(filter, null);
+      if (!hiddenWin.isDestroyed()) hiddenWin.close();
+      isRefreshing = false;
+    }
+  }, 15000);
+}
 
 // Alert state memory
 let alertState = {
@@ -96,6 +139,7 @@ async function fetchUsage() {
     if (response.status === 401) {
       authExpired = true;
       if (mainWindow) mainWindow.webContents.send('auth-expired');
+      attemptHiddenRefresh();
       return;
     }
 
@@ -209,24 +253,61 @@ function openTokenWindow() {
     return;
   }
   
+  const { session } = require('electron');
+  
   tokenWindow = new BrowserWindow({
-    width: 450,
-    height: 520,
+    width: 600,
+    height: 800,
     parent: mainWindow,
     modal: false,
     autoHideMenuBar: true,
-    title: "SLT Auth",
+    title: "SLT Login",
     webPreferences: {
       nodeIntegration: false,
-      contextIsolation: true,
-      preload: path.join(__dirname, 'preload.js')
+      contextIsolation: true
     }
   });
 
-  tokenWindow.loadFile('token.html');
+  const filter = { urls: ['*://omniscapp.slt.lk/*'] };
+
+  session.defaultSession.webRequest.onBeforeSendHeaders(filter, (details, callback) => {
+    if (details.requestHeaders['Authorization']) {
+      const auth = details.requestHeaders['Authorization'];
+      
+      let subscriberID = store.get('subscriberID', '');
+      try {
+        const urlObj = new URL(details.url);
+        if (urlObj.searchParams.has('subscriberID')) {
+          subscriberID = urlObj.searchParams.get('subscriberID');
+        }
+      } catch (e) {}
+
+      if (subscriberID) {
+        store.set('subscriberID', subscriberID);
+        const headers = store.get('headers', { 'X-IBM-Client-Id': 'b7402e9d66808f762ccedbe42c20668e' });
+        headers.Authorization = auth;
+        store.set('headers', headers);
+        
+        loadConfig();
+        
+        session.defaultSession.webRequest.onBeforeSendHeaders(filter, null);
+        
+        if (tokenWindow && !tokenWindow.isDestroyed()) {
+          tokenWindow.close();
+        }
+        
+        fetchUsage();
+      }
+    }
+    
+    callback({ requestHeaders: details.requestHeaders });
+  });
+
+  tokenWindow.loadURL('https://myslt.slt.lk/');
   
   tokenWindow.on('closed', () => {
     tokenWindow = null;
+    session.defaultSession.webRequest.onBeforeSendHeaders(filter, null);
   });
 }
 

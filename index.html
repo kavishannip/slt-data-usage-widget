@@ -1,246 +1,287 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SLT Usage Widget</title>
-  <style>
-    :root {
-      --bg-glass: rgba(20, 20, 25, 0.75);
-      --border-glass: rgba(255, 255, 255, 0.1);
-      --text-main: #f0f0f0;
-      --text-muted: #a0a0a5;
-      
-      --color-green: #10b981;
-      --color-amber: #f59e0b;
-      --color-red: #ef4444;
-      
-      --radius: 16px;
-    }
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SLT Usage Widget</title>
+    <style>
+      :root {
+        --bg-glass: rgba(20, 20, 25, 0.75);
+        --border-glass: rgba(255, 255, 255, 0.1);
+        --text-main: #f0f0f0;
+        --text-muted: #a0a0a5;
 
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+        --color-green: #10b981;
+        --color-amber: #f59e0b;
+        --color-red: #ef4444;
 
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-      background-color: transparent;
-      color: var(--text-main);
-      overflow: hidden;
-      padding: 10px;
-    }
-
-    .widget-container {
-      background: var(--bg-glass);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-      border: 1px solid var(--border-glass);
-      border-radius: var(--radius);
-      padding: 16px;
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-      height: 100vh;
-    }
-
-    .header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      -webkit-app-region: drag;
-    }
-
-    .header h1 {
-      font-size: 14px;
-      font-weight: 600;
-      letter-spacing: 0.5px;
-      text-transform: uppercase;
-      color: var(--text-muted);
-    }
-
-    .actions {
-      display: flex;
-      gap: 8px;
-      -webkit-app-region: no-drag;
-    }
-
-    .icon-btn {
-      background: transparent;
-      border: none;
-      color: var(--text-muted);
-      cursor: pointer;
-      padding: 4px;
-      border-radius: 4px;
-      transition: all 0.2s;
-    }
-
-    .icon-btn:hover {
-      background: rgba(255, 255, 255, 0.1);
-      color: var(--text-main);
-    }
-
-    .usage-card {
-      background: rgba(0, 0, 0, 0.2);
-      border-radius: 8px;
-      padding: 10px 12px;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
-
-    .card-header {
-      display: flex;
-      justify-content: space-between;
-      font-size: 13px;
-    }
-
-    .card-title { font-weight: 500; }
-    .card-value { font-weight: 600; font-family: monospace; }
-
-    .progress-bar-bg {
-      background: rgba(255, 255, 255, 0.05);
-      border-radius: 4px;
-      height: 6px;
-      overflow: hidden;
-    }
-
-    .progress-bar-fill {
-      height: 100%;
-      border-radius: 4px;
-      background: var(--color-green);
-      transition: width 0.5s ease-out, background-color 0.3s;
-    }
-
-    .footer {
-      font-size: 11px;
-      color: var(--text-muted);
-      text-align: center;
-      margin-top: auto;
-    }
-
-    .auth-banner {
-      display: none;
-      background: rgba(239, 68, 68, 0.2);
-      border: 1px solid rgba(239, 68, 68, 0.4);
-      color: #fca5a5;
-      padding: 10px;
-      border-radius: 8px;
-      text-align: center;
-      font-size: 12px;
-      cursor: pointer;
-      -webkit-app-region: no-drag;
-      transition: background 0.2s;
-    }
-
-    .auth-banner:hover {
-      background: rgba(239, 68, 68, 0.3);
-    }
-
-    .show { display: block; }
-  </style>
-</head>
-<body>
-  <div class="widget-container">
-    <div class="header">
-      <h1>MySLT Usage</h1>
-      <div class="actions">
-        <button class="icon-btn" id="refresh-btn" title="Refresh">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/></svg>
-        </button>
-      </div>
-    </div>
-
-    <div id="auth-warning" class="auth-banner">
-      Session expired. Click to re-auth.
-    </div>
-
-    <div id="cards-container">
-      <!-- Standard -->
-      <div class="usage-card">
-        <div class="card-header">
-          <span class="card-title">Standard</span>
-          <span class="card-value" id="val-standard">-- / -- GB</span>
-        </div>
-        <div class="progress-bar-bg">
-          <div class="progress-bar-fill" id="bar-standard" style="width: 0%"></div>
-        </div>
-      </div>
-      
-      <!-- Bonus -->
-      <div class="usage-card">
-        <div class="card-header">
-          <span class="card-title">Bonus</span>
-          <span class="card-value" id="val-bonus">-- / -- GB</span>
-        </div>
-        <div class="progress-bar-bg">
-          <div class="progress-bar-fill" id="bar-bonus" style="width: 0%"></div>
-        </div>
-      </div>
-
-      <!-- VAS -->
-      <div class="usage-card">
-        <div class="card-header">
-          <span class="card-title">VAS</span>
-          <span class="card-value" id="val-vas">-- / -- GB</span>
-        </div>
-        <div class="progress-bar-bg">
-          <div class="progress-bar-fill" id="bar-vas" style="width: 0%"></div>
-        </div>
-      </div>
-    </div>
-
-    <div class="footer" id="footer-text">
-      Waiting for data...
-    </div>
-  </div>
-
-  <script>
-    const getColor = (percent) => {
-      if (percent > 40) return 'var(--color-green)';
-      if (percent > 15) return 'var(--color-amber)';
-      return 'var(--color-red)';
-    };
-
-    const updateCard = (id, used, total) => {
-      const remaining = total - used;
-      const percent = total > 0 ? (remaining / total) * 100 : 0;
-      
-      document.getElementById(`val-${id}`).innerText = `${remaining.toFixed(1)} / ${total.toFixed(1)} GB`;
-      const bar = document.getElementById(`bar-${id}`);
-      bar.style.width = `${percent}%`;
-      bar.style.backgroundColor = getColor(percent);
-    };
-
-    document.getElementById('refresh-btn').addEventListener('click', () => {
-      window.api.requestRefresh();
-    });
-
-    document.getElementById('auth-warning').addEventListener('click', () => {
-      window.api.openTokenEntry();
-    });
-
-    window.api.onData((data) => {
-      if (data && data.dataBundle) {
-        const bundle = data.dataBundle;
-        const parseUsage = (summary) => summary ? { used: parseFloat(summary.used), total: parseFloat(summary.limit) } : { used: 0, total: 0 };
-        
-        const standard = parseUsage(bundle.my_package_summary);
-        const bonus = parseUsage(bundle.bonus_data_summary);
-        const vas = parseUsage(bundle.vas_data_summary);
-        
-        updateCard('standard', standard.used, standard.total);
-        updateCard('bonus', bonus.used, bonus.total);
-        updateCard('vas', vas.used, vas.total);
-        
-        document.getElementById('footer-text').innerText = `Reported: ${bundle.reported_time || 'Unknown'}`;
-      } else {
-        const now = new Date();
-        document.getElementById('footer-text').innerText = `Updated: ${now.toLocaleTimeString()}`;
+        --radius: 16px;
       }
-    });
 
-    window.api.onAuthExpired(() => {
-      document.getElementById('auth-warning').classList.add('show');
-    });
-  </script>
-</body>
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        font-family:
+          -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          "Helvetica Neue", Arial, sans-serif;
+        background-color: transparent;
+        color: var(--text-main);
+        overflow: hidden;
+        padding: 10px;
+      }
+
+      .widget-container {
+        background: var(--bg-glass);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid var(--border-glass);
+        border-radius: var(--radius);
+        padding: 16px;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        height: 100vh;
+      }
+
+      .header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        -webkit-app-region: drag;
+      }
+
+      .header h1 {
+        font-size: 14px;
+        font-weight: 600;
+        letter-spacing: 0.5px;
+        text-transform: uppercase;
+        color: var(--text-muted);
+      }
+
+      .actions {
+        display: flex;
+        gap: 8px;
+        -webkit-app-region: no-drag;
+      }
+
+      .icon-btn {
+        background: transparent;
+        border: none;
+        color: var(--text-muted);
+        cursor: pointer;
+        padding: 4px;
+        border-radius: 4px;
+        transition: all 0.2s;
+      }
+
+      .icon-btn:hover {
+        background: rgba(255, 255, 255, 0.1);
+        color: var(--text-main);
+      }
+
+      .usage-card {
+        background: rgba(0, 0, 0, 0.2);
+        border-radius: 8px;
+        padding: 10px 12px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .card-header {
+        display: flex;
+        justify-content: space-between;
+        font-size: 13px;
+      }
+
+      .card-title {
+        font-weight: 500;
+      }
+      .card-value {
+        font-weight: 600;
+        font-family: monospace;
+      }
+
+      .progress-bar-bg {
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 4px;
+        height: 6px;
+        overflow: hidden;
+      }
+
+      .progress-bar-fill {
+        height: 100%;
+        border-radius: 4px;
+        background: var(--color-green);
+        transition:
+          width 0.5s ease-out,
+          background-color 0.3s;
+      }
+
+      .footer {
+        font-size: 11px;
+        color: var(--text-muted);
+        text-align: center;
+        margin-top: auto;
+      }
+
+      .auth-banner {
+        display: none;
+        background: rgba(239, 68, 68, 0.2);
+        border: 1px solid rgba(239, 68, 68, 0.4);
+        color: #fca5a5;
+        padding: 10px;
+        border-radius: 8px;
+        text-align: center;
+        font-size: 12px;
+        cursor: pointer;
+        -webkit-app-region: no-drag;
+        transition: background 0.2s;
+      }
+
+      .auth-banner:hover {
+        background: rgba(239, 68, 68, 0.3);
+      }
+
+      .show {
+        display: block;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="widget-container">
+      <div class="header">
+        <h1>MySLT Usage</h1>
+        <div class="actions">
+          <button class="icon-btn" id="refresh-btn" title="Refresh">
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <path
+                d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"
+              />
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <div id="auth-warning" class="auth-banner">
+        Session expired. Click to re-auth.
+      </div>
+
+      <div id="cards-container">
+        <!-- Standard -->
+        <div class="usage-card">
+          <div class="card-header">
+            <span class="card-title">Standard</span>
+            <span class="card-value" id="val-standard">-- / -- GB</span>
+          </div>
+          <div class="progress-bar-bg">
+            <div
+              class="progress-bar-fill"
+              id="bar-standard"
+              style="width: 0%"
+            ></div>
+          </div>
+        </div>
+
+        <!-- Bonus -->
+        <div class="usage-card">
+          <div class="card-header">
+            <span class="card-title">Bonus</span>
+            <span class="card-value" id="val-bonus">-- / -- GB</span>
+          </div>
+          <div class="progress-bar-bg">
+            <div
+              class="progress-bar-fill"
+              id="bar-bonus"
+              style="width: 0%"
+            ></div>
+          </div>
+        </div>
+
+        <!-- VAS -->
+        <div class="usage-card">
+          <div class="card-header">
+            <span class="card-title">VAS</span>
+            <span class="card-value" id="val-vas">-- / -- GB</span>
+          </div>
+          <div class="progress-bar-bg">
+            <div class="progress-bar-fill" id="bar-vas" style="width: 0%"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="footer" id="footer-text">Waiting for data...</div>
+    </div>
+
+    <script>
+      const getColor = (percent) => {
+        if (percent > 40) return "var(--color-green)";
+        if (percent > 15) return "var(--color-amber)";
+        return "var(--color-red)";
+      };
+
+      const updateCard = (id, used, total) => {
+        const remaining = total - used;
+        const percent = total > 0 ? (remaining / total) * 100 : 0;
+
+        document.getElementById(`val-${id}`).innerText =
+          `${remaining.toFixed(1)} / ${total.toFixed(1)} GB`;
+        const bar = document.getElementById(`bar-${id}`);
+        bar.style.width = `${percent}%`;
+        bar.style.backgroundColor = getColor(percent);
+      };
+
+      document.getElementById("refresh-btn").addEventListener("click", () => {
+        window.api.requestRefresh();
+      });
+
+      document.getElementById("auth-warning").addEventListener("click", () => {
+        window.api.openTokenEntry();
+      });
+
+      window.api.onData((data) => {
+        if (data && data.dataBundle) {
+          const bundle = data.dataBundle;
+          const parseUsage = (summary) =>
+            summary
+              ? {
+                  used: parseFloat(summary.used),
+                  total: parseFloat(summary.limit),
+                }
+              : { used: 0, total: 0 };
+
+          const standard = parseUsage(bundle.my_package_summary);
+          const bonus = parseUsage(bundle.bonus_data_summary);
+          const vas = parseUsage(bundle.vas_data_summary);
+
+          updateCard("standard", standard.used, standard.total);
+          updateCard("bonus", bonus.used, bonus.total);
+          updateCard("vas", vas.used, vas.total);
+
+          document.getElementById("footer-text").innerText =
+            `Reported: ${bundle.reported_time || "Unknown"}`;
+        } else {
+          const now = new Date();
+          document.getElementById("footer-text").innerText =
+            `Updated: ${now.toLocaleTimeString()}`;
+        }
+      });
+
+      window.api.onAuthExpired(() => {
+        document.getElementById("auth-warning").classList.add("show");
+      });
+    </script>
+  </body>
 </html>

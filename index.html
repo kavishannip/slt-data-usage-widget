@@ -3,12 +3,13 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>SLT Usage Widget</title>
+    <title>SLTDU Widget</title>
     <style>
       :root {
         --color-green: #10b981;
         --color-amber: #f59e0b;
         --color-red: #ef4444;
+        --color-blue: #3b82f6;
         --radius: 16px;
       }
       
@@ -757,14 +758,6 @@
           document.getElementById('cards-container').style.paddingRight = '4px';
         }
         renderCards();
-      });
-
-      document.getElementById("settings-btn").addEventListener("click", () => {
-        window.api.openSettings();
-      });
-
-      document.getElementById("login-btn").addEventListener("click", () => {
-        window.api.openTokenEntry();
       });
 
       let draggedCard = null;

@@ -1,7 +1,7 @@
 {
-  "name": "slt-usage-widget",
+  "name": "sltdu-widget",
   "version": "1.0.0",
-  "description": "SLT Data Usage Widget",
+  "description": "SLTDU Widget — SLT Data Usage Desktop Widget",
   "main": "main.js",
   "scripts": {
     "start": "electron .",
@@ -14,6 +14,10 @@
       "target": "nsis",
       "icon": "build/icon.ico"
     },
+    "files": [
+      "**/*",
+      "build/icon.ico"
+    ],
     "nsis": {
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,

@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>SLT Widget Settings</title>
+    <title>SLTDU Widget Settings</title>
     <style>
       :root {
         --color-green: #10b981;
@@ -303,7 +303,7 @@
           appConfig = { hiddenCharts: [], ...config };
           if (!appConfig.hiddenCharts) appConfig.hiddenCharts = [];
           
-          document.getElementById('refresh-input').value = config.refreshMinutes || 5;
+          document.getElementById('refresh-input').value = config.refreshMinutes || 1;
           document.getElementById('ontop-toggle').checked = config.alwaysOnTop !== false;
           document.getElementById('autoresize-toggle').checked = config.autoResize !== false;
           document.getElementById('notify-low-toggle').checked = config.notifyOnLowData !== false;

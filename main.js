@@ -61,7 +61,7 @@ function attemptHiddenRefresh() {
 let alertState = {};
 
 const sltAutoLauncher = new AutoLaunch({
-  name: 'SLT Usage Widget',
+  name: 'SLTDU Widget',
   path: app.getPath('exe'),
 });
 
@@ -131,7 +131,7 @@ function checkAlerts(category, usageData) {
 
   if (percent <= config.criticalThresholdPercent && !state.notifiedCritical) {
     new Notification({
-      title: 'SLT Usage Critical',
+      title: 'SLTDU — Usage Critical',
       body: `${category} data is below ${config.criticalThresholdPercent}%. Only ${remaining.toFixed(1)}GB left.`,
       urgency: 'critical'
     }).show();
@@ -139,7 +139,7 @@ function checkAlerts(category, usageData) {
     state.notifiedWarn = true; // Avoid sending warning if we jump straight to critical
   } else if (percent <= config.lowDataThresholdPercent && !state.notifiedWarn) {
     new Notification({
-      title: 'SLT Usage Warning',
+      title: 'SLTDU — Usage Warning',
       body: `${category} data is below ${config.lowDataThresholdPercent}%. ${remaining.toFixed(1)}GB remaining.`,
       urgency: 'normal'
     }).show();
@@ -254,16 +254,14 @@ async function fetchUsage() {
 
 function startPolling() {
   if (refreshInterval) clearInterval(refreshInterval);
-  const ms = (config.refreshMinutes || 5) * 60 * 1000;
+  const ms = (config.refreshMinutes || 1) * 60 * 1000;
   refreshInterval = setInterval(fetchUsage, ms);
   fetchUsage(); // Initial fetch
 }
 
 function createTray() {
-  const { nativeImage } = require('electron');
-  const icon = nativeImage.createEmpty();
-  
-  tray = new Tray(icon);
+  const iconPath = path.join(__dirname, 'build', 'icon.ico');
+  tray = new Tray(iconPath);
   
   const contextMenu = Menu.buildFromTemplate([
     { label: 'Show/Hide Widget', click: () => {
@@ -290,15 +288,8 @@ function createTray() {
     }
   ]);
   
-  tray.setToolTip('SLT Usage Widget');
+  tray.setToolTip('SLTDU Widget');
   tray.setContextMenu(contextMenu);
-  
-  try {
-    const realIcon = nativeImage.createFromPath(path.join(__dirname, 'tray-icon.png'));
-    if (!realIcon.isEmpty()) {
-      tray.setImage(realIcon);
-    }
-  } catch (e) {}
 }
 
 function createWindow() {
@@ -491,7 +482,7 @@ ipcMain.on('logout', async () => {
 
 ipcMain.handle('get-config', () => {
   return {
-    refreshMinutes: store.get('refreshMinutes', 5),
+    refreshMinutes: store.get('refreshMinutes', 1),
     alwaysOnTop: store.get('alwaysOnTop', true),
     theme: store.get('theme', 'dark'),
     chartMode: store.get('chartMode', 'bar'),

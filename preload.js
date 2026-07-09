@@ -6,5 +6,7 @@ contextBridge.exposeInMainWorld('api', {
   requestRefresh: () => ipcRenderer.send('request-refresh'),
   openTokenEntry: () => ipcRenderer.send('open-token-entry'),
   saveToken: (subscriberID, token) => ipcRenderer.send('save-token', { subscriberID, token }),
-  logout: () => ipcRenderer.send('logout')
+  logout: () => ipcRenderer.send('logout'),
+  getConfig: () => ipcRenderer.invoke('get-config'),
+  updateSetting: (key, value) => ipcRenderer.send('update-setting', { key, value })
 });

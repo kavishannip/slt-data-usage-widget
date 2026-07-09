@@ -223,6 +223,7 @@ function createWindow() {
   const { width: screenWidth } = screen.getPrimaryDisplay().workAreaSize;
   const windowWidth = 320;
   const windowHeight = 420;
+  const isAlwaysOnTop = store.get('alwaysOnTop', true);
 
   mainWindow = new BrowserWindow({
     width: windowWidth,
@@ -231,7 +232,7 @@ function createWindow() {
     y: 30,
     frame: false,
     transparent: true,
-    alwaysOnTop: true,
+    alwaysOnTop: isAlwaysOnTop,
     skipTaskbar: true,
     resizable: false,
     webPreferences: {
@@ -372,5 +373,24 @@ ipcMain.on('logout', async () => {
   authExpired = true;
   if (mainWindow) {
     mainWindow.webContents.send('auth-expired');
+  }
+});
+
+ipcMain.handle('get-config', () => {
+  return {
+    refreshMinutes: store.get('refreshMinutes', 5),
+    alwaysOnTop: store.get('alwaysOnTop', true)
+  };
+});
+
+ipcMain.on('update-setting', (event, { key, value }) => {
+  store.set(key, value);
+  loadConfig();
+  
+  if (key === 'alwaysOnTop' && mainWindow) {
+    mainWindow.setAlwaysOnTop(value);
+  }
+  if (key === 'refreshMinutes') {
+    startPolling();
   }
 });

@@ -117,17 +117,14 @@
         display: flex;
         flex-direction: column;
         gap: 12px;
-        overflow-y: auto;
-        padding-right: 4px;
+        overflow: hidden;
       }
       
-      #cards-container::-webkit-scrollbar {
-        width: 4px;
-      }
-      
-      #cards-container::-webkit-scrollbar-thumb {
-        background: rgba(255, 255, 255, 0.2);
-        border-radius: 4px;
+      #cards-container.pie-mode {
+        flex-direction: row;
+        flex-wrap: wrap;
+        justify-content: space-evenly;
+        gap: 16px;
       }
 
       .usage-card {
@@ -138,6 +135,69 @@
         flex-direction: column;
         gap: 8px;
         flex-shrink: 0;
+        cursor: grab;
+        position: relative;
+      }
+      
+      .usage-card.pie-card {
+        width: 120px;
+        align-items: center;
+        gap: 4px;
+      }
+      
+      .usage-card.dragging {
+        opacity: 0.5;
+        cursor: grabbing;
+      }
+      
+      .hide-btn {
+        position: absolute;
+        top: 2px;
+        right: 4px;
+        background: transparent;
+        border: none;
+        color: var(--text-muted);
+        cursor: pointer;
+        opacity: 0;
+        transition: opacity 0.2s;
+        font-size: 10px;
+      }
+      .usage-card:hover .hide-btn {
+        opacity: 1;
+      }
+      .hide-btn:hover {
+        color: var(--color-red);
+      }
+      
+      .pie-chart {
+        width: 70px;
+        height: 70px;
+        position: relative;
+      }
+      .pie-svg {
+        transform: rotate(-90deg);
+        width: 100%;
+        height: 100%;
+      }
+      .pie-bg {
+        fill: none;
+        stroke: rgba(255, 255, 255, 0.05);
+        stroke-width: 4;
+      }
+      .pie-fill {
+        fill: none;
+        stroke-width: 4;
+        stroke-linecap: round;
+        transition: stroke-dasharray 1s ease-out;
+      }
+      .pie-text {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        font-size: 12px;
+        font-weight: 600;
+        font-family: monospace;
       }
 
       .card-header {
@@ -391,6 +451,19 @@
         </div>
         
         <div class="settings-section">
+          <label>Layout Mode</label>
+          <select id="mode-select" class="theme-select">
+            <option value="bar">Bar Charts</option>
+            <option value="pie">Pie Charts</option>
+          </select>
+        </div>
+
+        <div class="settings-section" style="flex-direction: column; align-items: flex-start; gap: 8px;">
+          <label>Hidden Charts</label>
+          <div id="hidden-charts-list" style="display: flex; flex-wrap: wrap; gap: 4px;"></div>
+        </div>
+        
+        <div class="settings-section">
           <label>Auto Refresh (mins)</label>
           <input type="number" id="refresh-input" value="5" min="1" max="1440" />
         </div>
@@ -423,16 +496,32 @@
         window.api.requestRefresh();
       });
 
+      let appConfig = { chartMode: 'bar', chartOrder: [], hiddenCharts: [] };
+      let activeCardsData = [];
+
       // Initialize settings
       window.api.getConfig().then(config => {
         if (config) {
+          appConfig = { chartMode: 'bar', chartOrder: [], hiddenCharts: [], ...config };
+          if (!appConfig.hiddenCharts) appConfig.hiddenCharts = [];
+          if (!appConfig.chartOrder) appConfig.chartOrder = [];
           document.getElementById('refresh-input').value = config.refreshMinutes;
           document.getElementById('ontop-toggle').checked = config.alwaysOnTop;
           if (config.theme) {
             document.getElementById('theme-select').value = config.theme;
             document.documentElement.setAttribute('data-theme', config.theme);
           }
+          if (config.chartMode) {
+            document.getElementById('mode-select').value = config.chartMode;
+          }
+          if (activeCardsData.length > 0) renderCards();
         }
+      });
+      
+      document.getElementById('mode-select').addEventListener('change', (e) => {
+        appConfig.chartMode = e.target.value;
+        window.api.updateSetting('chartMode', appConfig.chartMode);
+        renderCards();
       });
       
       document.getElementById('theme-select').addEventListener('change', (e) => {
@@ -468,30 +557,165 @@
         window.api.openTokenEntry();
       });
 
-      const createCard = (name, used, limit, remaining, percent, unit) => {
+      let draggedCard = null;
+
+      function getDragAfterElement(container, y) {
+        const draggableElements = [...container.querySelectorAll('.usage-card:not(.dragging)')];
+        return draggableElements.reduce((closest, child) => {
+          const box = child.getBoundingClientRect();
+          const offset = y - box.top - box.height / 2;
+          if (offset < 0 && offset > closest.offset) {
+            return { offset: offset, element: child };
+          } else {
+            return closest;
+          }
+        }, { offset: Number.NEGATIVE_INFINITY }).element;
+      }
+
+      const createCard = (d) => {
+        let { name, used, limit, remaining, percent, unit } = d;
         if (remaining === null || remaining === undefined) remaining = limit - used;
         if (percent === null || percent === undefined) percent = limit > 0 ? (remaining / limit) * 100 : 0;
-        
-        if (remaining < 0) {
-            remaining = 0;
-            percent = 0;
-        }
+        if (remaining < 0) { remaining = 0; percent = 0; }
 
         const card = document.createElement("div");
         card.className = "usage-card";
-        card.innerHTML = `
-          <div class="card-header">
-            <span class="card-title">${name}</span>
-            <span class="card-value">${parseFloat(remaining).toFixed(1)} / ${parseFloat(limit).toFixed(1)} ${unit || 'GB'}</span>
-          </div>
-          <div class="progress-bar-bg">
-            <div class="progress-bar-fill" style="width: ${Math.max(0, Math.min(100, percent))}%; background-color: ${getColor(percent)}"></div>
-          </div>
-          <div style="font-size: 10px; color: var(--text-muted); text-align: right; margin-top: -4px;">
-            Used: ${parseFloat(used).toFixed(1)} ${unit || 'GB'}
-          </div>
-        `;
+        card.draggable = true;
+        card.dataset.name = name;
+        if (appConfig.chartMode === 'pie') card.classList.add('pie-card');
+
+        card.addEventListener('dragstart', (e) => {
+          draggedCard = card;
+          setTimeout(() => card.classList.add('dragging'), 0);
+        });
+        
+        card.addEventListener('dragend', () => {
+          card.classList.remove('dragging');
+          draggedCard = null;
+          
+          // Save new order
+          const container = document.getElementById("cards-container");
+          const newOrder = Array.from(container.children).map(c => c.dataset.name);
+          appConfig.chartOrder = newOrder;
+          window.api.updateSetting('chartOrder', newOrder);
+        });
+        
+        card.addEventListener('dragover', (e) => {
+          e.preventDefault();
+          const container = document.getElementById("cards-container");
+          const afterElement = getDragAfterElement(container, e.clientY);
+          if (afterElement == null) {
+            container.appendChild(draggedCard);
+          } else {
+            container.insertBefore(draggedCard, afterElement);
+          }
+        });
+
+        const color = getColor(percent);
+
+        if (appConfig.chartMode === 'pie') {
+          const c = 2 * Math.PI * 16;
+          const dashArray = `${(Math.max(0, Math.min(100, percent)) / 100) * c} ${c}`;
+          card.innerHTML = `
+            <button class="hide-btn" title="Hide">✕</button>
+            <div style="font-size: 11px; font-weight: 500; text-align: center; margin-bottom: 4px; width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${name}">${name}</div>
+            <div class="pie-chart">
+              <svg class="pie-svg" viewBox="0 0 36 36">
+                <circle class="pie-bg" cx="18" cy="18" r="16"></circle>
+                <circle class="pie-fill" cx="18" cy="18" r="16" stroke="${color}" stroke-dasharray="${dashArray}"></circle>
+              </svg>
+              <div class="pie-text" style="color: ${color}">${Math.round(percent)}%</div>
+            </div>
+            <div style="font-size: 10px; color: var(--text-muted); text-align: center; margin-top: 4px;">
+              ${parseFloat(remaining).toFixed(1)} / ${parseFloat(limit).toFixed(1)} ${unit}
+            </div>
+          `;
+        } else {
+          card.innerHTML = `
+            <button class="hide-btn" title="Hide">✕</button>
+            <div class="card-header">
+              <span class="card-title">${name}</span>
+              <span class="card-value">${parseFloat(remaining).toFixed(1)} / ${parseFloat(limit).toFixed(1)} ${unit || 'GB'}</span>
+            </div>
+            <div class="progress-bar-bg">
+              <div class="progress-bar-fill" style="width: ${Math.max(0, Math.min(100, percent))}%; background-color: ${color}"></div>
+            </div>
+            <div style="font-size: 10px; color: var(--text-muted); text-align: right; margin-top: -4px;">
+              Used: ${parseFloat(used).toFixed(1)} ${unit || 'GB'}
+            </div>
+          `;
+        }
+        
+        card.querySelector('.hide-btn').onclick = (e) => {
+          e.stopPropagation();
+          if (!appConfig.hiddenCharts) appConfig.hiddenCharts = [];
+          if (!appConfig.hiddenCharts.includes(name)) {
+            appConfig.hiddenCharts.push(name);
+            window.api.updateSetting('hiddenCharts', appConfig.hiddenCharts);
+            renderCards();
+          }
+        };
+
         return card;
+      };
+
+      const renderCards = () => {
+        const container = document.getElementById("cards-container");
+        container.innerHTML = "";
+        
+        if (appConfig.chartMode === 'pie') {
+          container.classList.add('pie-mode');
+        } else {
+          container.classList.remove('pie-mode');
+        }
+        
+        if (!appConfig.hiddenCharts) appConfig.hiddenCharts = [];
+        if (!appConfig.chartOrder) appConfig.chartOrder = [];
+        
+        let visibleData = activeCardsData.filter(d => !appConfig.hiddenCharts.includes(d.name));
+        
+        visibleData.sort((a, b) => {
+          let ixA = appConfig.chartOrder.indexOf(a.name);
+          let ixB = appConfig.chartOrder.indexOf(b.name);
+          if (ixA === -1) ixA = 999;
+          if (ixB === -1) ixB = 999;
+          return ixA - ixB;
+        });
+
+        visibleData = visibleData.slice(0, 6);
+        
+        visibleData.forEach(d => {
+          container.appendChild(createCard(d));
+        });
+        
+        const hiddenList = document.getElementById('hidden-charts-list');
+        hiddenList.innerHTML = '';
+        if (appConfig.hiddenCharts.length === 0) {
+          hiddenList.innerHTML = '<span style="font-size: 10px; color: var(--text-muted)">None</span>';
+        } else {
+          appConfig.hiddenCharts.forEach(name => {
+            const btn = document.createElement('button');
+            btn.innerText = "+ " + name;
+            btn.style.cssText = "background: rgba(255,255,255,0.1); border: none; color: var(--text-main); font-size: 10px; padding: 2px 6px; border-radius: 4px; cursor: pointer;";
+            btn.onclick = () => {
+              appConfig.hiddenCharts = appConfig.hiddenCharts.filter(n => n !== name);
+              window.api.updateSetting('hiddenCharts', appConfig.hiddenCharts);
+              renderCards();
+            };
+            hiddenList.appendChild(btn);
+          });
+        }
+        
+        let height = 150; // Base height for header, footer, padding
+        if (visibleData.length > 0) {
+          if (appConfig.chartMode === 'bar') {
+            height += visibleData.length * 68; 
+          } else {
+            const rows = Math.ceil(visibleData.length / 2);
+            height += rows * 135;
+          }
+        }
+        window.api.resizeWindow(320, Math.max(160, height));
       };
 
       window.api.onData((data) => {
@@ -505,47 +729,30 @@
             document.getElementById("package-name-title").innerText = pkgInfo.package_name;
           }
 
-          const container = document.getElementById("cards-container");
-          container.innerHTML = "";
+          activeCardsData = [];
           
           if (pkgInfo && pkgInfo.usageDetails && Array.isArray(pkgInfo.usageDetails)) {
             pkgInfo.usageDetails.forEach((detail) => {
               let detailName = detail.name;
-              if (detailName === 'Total (Standard + Free)') {
-                detailName = 'Total';
-              }
-              container.appendChild(createCard(
-                detailName,
-                detail.used,
-                detail.limit,
-                detail.remaining,
-                detail.percentage,
-                detail.volume_unit
-              ));
+              if (detailName === 'Total (Standard + Free)') detailName = 'Total';
+              activeCardsData.push({
+                name: detailName, used: detail.used, limit: detail.limit, remaining: detail.remaining, percent: detail.percentage, unit: detail.volume_unit
+              });
             });
           }
 
-          const summaryKeys = [
-            'bonus_data_summary',
-            'free_data_summary',
-            'vas_data_summary',
-            'extra_gb_data_summary'
-          ];
-          
+          const summaryKeys = ['bonus_data_summary', 'free_data_summary', 'vas_data_summary', 'extra_gb_data_summary'];
           summaryKeys.forEach(key => {
             const summary = bundle[key];
             if (summary && summary.limit !== undefined && summary.used !== undefined) {
               const name = key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()).replace(' Summary', '');
-              container.appendChild(createCard(
-                name,
-                summary.used,
-                summary.limit,
-                null,
-                null,
-                summary.volume_unit
-              ));
+              activeCardsData.push({
+                name: name, used: summary.used, limit: summary.limit, remaining: null, percent: null, unit: summary.volume_unit
+              });
             }
           });
+          
+          renderCards();
           
           document.getElementById("footer-text").innerText =
             `Reported: ${bundle.reported_time || pkgInfo?.reported_time || "Unknown"}`;

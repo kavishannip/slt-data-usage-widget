@@ -416,8 +416,20 @@ ipcMain.handle('get-config', () => {
   return {
     refreshMinutes: store.get('refreshMinutes', 5),
     alwaysOnTop: store.get('alwaysOnTop', true),
-    theme: store.get('theme', 'dark')
+    theme: store.get('theme', 'dark'),
+    chartMode: store.get('chartMode', 'bar'),
+    chartOrder: store.get('chartOrder', []),
+    hiddenCharts: store.get('hiddenCharts', [])
   };
+});
+
+ipcMain.on('resize-window', (event, { width, height }) => {
+  if (mainWindow) {
+    const { screen } = require('electron');
+    const { height: screenHeight } = screen.getPrimaryDisplay().workAreaSize;
+    let finalHeight = Math.min(height, screenHeight - 60);
+    mainWindow.setSize(width, finalHeight, false);
+  }
 });
 
 ipcMain.on('update-setting', (event, { key, value }) => {

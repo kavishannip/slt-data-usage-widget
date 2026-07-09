@@ -8,5 +8,6 @@ contextBridge.exposeInMainWorld('api', {
   saveToken: (subscriberID, token) => ipcRenderer.send('save-token', { subscriberID, token }),
   logout: () => ipcRenderer.send('logout'),
   getConfig: () => ipcRenderer.invoke('get-config'),
-  updateSetting: (key, value) => ipcRenderer.send('update-setting', { key, value })
+  updateSetting: (key, value) => ipcRenderer.send('update-setting', { key, value }),
+  resizeWindow: (width, height) => ipcRenderer.send('resize-window', { width, height })
 });

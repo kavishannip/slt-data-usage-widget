@@ -9,7 +9,7 @@ const store = new Store();
 const si = require('systeminformation');
 
 // ─── Debug Logger ───────────────────────────────────────────────
-const DEBUG = true; // Set to false for production builds
+const DEBUG = false; // Set to false for production builds
 let logFilePath = null;
 
 function initLogger() {

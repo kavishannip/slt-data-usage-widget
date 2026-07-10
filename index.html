@@ -637,6 +637,17 @@
         return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
       };
       
+      const formatBytesBig = (bytes) => {
+        if (!bytes || bytes === 0) return '0.0 MB';
+        const k = 1024;
+        const mb = bytes / (k * k);
+        if (mb < 1000) return mb.toFixed(1) + ' MB';
+        const gb = mb / k;
+        if (gb < 1000) return gb.toFixed(2) + ' GB';
+        const tb = gb / k;
+        return tb.toFixed(2) + ' TB';
+      };
+      
       const networkHistory = [];
       const MAX_HISTORY = 60;
       
@@ -695,6 +706,15 @@
           const downEl = document.getElementById('download-speed');
           if (upEl) upEl.innerText = formatSpeed(stats.upload);
           if (downEl) downEl.innerText = formatSpeed(stats.download);
+          
+          if (stats.daily_rx !== undefined && stats.daily_tx !== undefined) {
+            const dDownEl = document.getElementById('daily-download');
+            const dUpEl = document.getElementById('daily-upload');
+            const dTotEl = document.getElementById('daily-total');
+            if (dDownEl) dDownEl.innerText = formatBytesBig(stats.daily_rx);
+            if (dUpEl) dUpEl.innerText = formatBytesBig(stats.daily_tx);
+            if (dTotEl) dTotEl.innerText = formatBytesBig(stats.daily_rx + stats.daily_tx);
+          }
           
           networkHistory.push(stats);
           if (networkHistory.length > MAX_HISTORY) networkHistory.shift();
@@ -777,7 +797,7 @@
 
       const createCard = (d) => {
         let { name, used, limit, remaining, percent, unit, type } = d;
-        if (type !== 'network' && type !== 'session') {
+        if (type !== 'network' && type !== 'session' && type !== 'daily_device') {
           if (remaining === null || remaining === undefined) remaining = limit - used;
           if (percent === null || percent === undefined) percent = limit > 0 ? (remaining / limit) * 100 : 0;
           if (remaining < 0) { remaining = 0; percent = 0; }
@@ -787,7 +807,7 @@
         card.className = "usage-card";
         card.draggable = true;
         card.dataset.name = name;
-        if (appConfig.chartMode === 'pie' && type !== 'network' && type !== 'session') card.classList.add('pie-card');
+        if (appConfig.chartMode === 'pie' && type !== 'network' && type !== 'session' && type !== 'daily_device') card.classList.add('pie-card');
 
         card.addEventListener('dragstart', (e) => {
           draggedCard = card;
@@ -816,7 +836,7 @@
           }
         });
 
-        const color = type === 'network' ? '#3b82f6' : (type === 'session' ? 'var(--color-blue)' : getColor(percent));
+        const color = type === 'network' ? '#3b82f6' : (type === 'session' ? 'var(--color-blue)' : (type === 'daily_device' ? 'var(--color-green)' : getColor(percent)));
 
         if (type === 'session') {
           card.innerHTML = `
@@ -895,6 +915,31 @@
               card.querySelector('#session-usage-text').innerText = '0.0 / ' + mb + ' MB';
             };
           }, 0);
+        } else if (type === 'daily_device') {
+          card.innerHTML = `
+            <button class="hide-btn" title="Hide">✕</button>
+            <div class="card-header" style="margin-bottom: 6px;">
+              <span class="card-title">${name}</span>
+            </div>
+            <div style="display:flex; flex-direction:column; gap:6px;">
+              <div style="display:flex; justify-content:space-between; align-items:center;">
+                <span style="color:var(--text-muted); font-size:11px;">Total Consumption</span>
+                <span style="font-size:16px; font-weight:bold; font-family:monospace;">
+                  <span style="color:var(--color-blue); font-size:14px; margin-right:4px;">⬍</span><span id="daily-total">${formatBytesBig((lastNetworkStats.daily_rx || 0) + (lastNetworkStats.daily_tx || 0))}</span>
+                </span>
+              </div>
+              <div style="display:flex; justify-content:space-between; font-size:12px; font-family:monospace; margin-top:2px;">
+                <div style="display:flex; align-items:center; gap:4px;">
+                  <span style="color:var(--color-green)">▼</span>
+                  <span id="daily-download" style="font-weight:600;">${formatBytesBig(lastNetworkStats.daily_rx || 0)}</span>
+                </div>
+                <div style="display:flex; align-items:center; gap:4px;">
+                  <span style="color:var(--color-amber)">▲</span>
+                  <span id="daily-upload" style="font-weight:600;">${formatBytesBig(lastNetworkStats.daily_tx || 0)}</span>
+                </div>
+              </div>
+            </div>
+          `;
         } else if (type === 'network') {
           card.innerHTML = `
             <button class="hide-btn" title="Hide">✕</button>
@@ -1053,6 +1098,7 @@
             }
           });
           
+          activeCardsData.push({ name: 'Device Daily Usage', type: 'daily_device' });
           activeCardsData.push({ name: 'Network Traffic', type: 'network' });
           activeCardsData.push({ name: 'Set Data Limit', type: 'session' });
           

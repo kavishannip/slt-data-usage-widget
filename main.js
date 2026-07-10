@@ -109,7 +109,11 @@ function loadConfig() {
     criticalThresholdPercent: store.get('criticalThresholdPercent', 10),
     autoLaunch: store.get('autoLaunch', true),
     notifyOnLowData: store.get('notifyOnLowData', true),
-    lowDataThresholdPercent: store.get('lowDataThresholdPercent', 20)
+    lowDataThresholdPercent: store.get('lowDataThresholdPercent', 20),
+    dailyResetTime: store.get('dailyResetTime', '00:00'),
+    dailyRxBytes: store.get('dailyRxBytes', 0),
+    dailyTxBytes: store.get('dailyTxBytes', 0),
+    lastResetTime: store.get('lastResetTime', Date.now())
   };
 }
 
@@ -190,6 +194,34 @@ function startNetworkPolling() {
   let lastIface = null;
   let pollCount = 0;
 
+  let dailyRx = config.dailyRxBytes || 0;
+  let dailyTx = config.dailyTxBytes || 0;
+  let lastReset = config.lastResetTime || Date.now();
+
+  function checkDailyReset() {
+    const now = new Date();
+    const resetTimeStr = config.dailyResetTime || '00:00';
+    const [resetHour, resetMinute] = resetTimeStr.split(':').map(Number);
+    
+    // Find the most recent reset boundary
+    const lastBoundary = new Date(now);
+    lastBoundary.setHours(resetHour, resetMinute, 0, 0);
+    
+    if (now < lastBoundary) {
+      lastBoundary.setDate(lastBoundary.getDate() - 1);
+    }
+    
+    if (lastBoundary.getTime() > lastReset) {
+      dailyRx = 0;
+      dailyTx = 0;
+      lastReset = now.getTime();
+      store.set('dailyRxBytes', 0);
+      store.set('dailyTxBytes', 0);
+      store.set('lastResetTime', lastReset);
+      debugLog('[Network] Daily counter reset applied.');
+    }
+  }
+
   networkInterval = setInterval(async () => {
     try {
       const ifaces = await si.networkInterfaces();
@@ -219,7 +251,8 @@ function startNetworkPolling() {
         if (mainWindow && !mainWindow.isDestroyed()) {
           mainWindow.webContents.send('network-stats', {
             download: 0, upload: 0,
-            total_rx: cumulativeRx, total_tx: cumulativeTx
+            total_rx: cumulativeRx, total_tx: cumulativeTx,
+            daily_rx: dailyRx, daily_tx: dailyTx
           });
         }
         return;
@@ -231,23 +264,43 @@ function startNetworkPolling() {
         const rxBytes = stat.rx_bytes || 0;
         const txBytes = stat.tx_bytes || 0;
 
+        let deltaRx = 0;
+        let deltaTx = 0;
+
         if (prevRxBytes !== null) {
           // Accumulate deltas; handle OS counter resets gracefully
-          const deltaRx = rxBytes >= prevRxBytes ? rxBytes - prevRxBytes : rxBytes;
-          const deltaTx = txBytes >= prevTxBytes ? txBytes - prevTxBytes : txBytes;
+          deltaRx = rxBytes >= prevRxBytes ? rxBytes - prevRxBytes : rxBytes;
+          deltaTx = txBytes >= prevTxBytes ? txBytes - prevTxBytes : txBytes;
           // Sanity: ignore unreasonably large deltas (> 100MB in 1s = likely counter reset)
-          if (deltaRx < 100 * 1024 * 1024) cumulativeRx += deltaRx;
-          if (deltaTx < 100 * 1024 * 1024) cumulativeTx += deltaTx;
+          if (deltaRx < 100 * 1024 * 1024) {
+            cumulativeRx += deltaRx;
+            dailyRx += deltaRx;
+          }
+          if (deltaTx < 100 * 1024 * 1024) {
+            cumulativeTx += deltaTx;
+            dailyTx += deltaTx;
+          }
         }
         prevRxBytes = rxBytes;
         prevTxBytes = txBytes;
+
+        checkDailyReset();
+
+        // Save daily usage to store every 10 polls (~10 seconds)
+        if (pollCount % 10 === 0) {
+          store.set('dailyRxBytes', dailyRx);
+          store.set('dailyTxBytes', dailyTx);
+          store.set('lastResetTime', lastReset);
+        }
 
         if (mainWindow && !mainWindow.isDestroyed()) {
           mainWindow.webContents.send('network-stats', {
             download: Math.max(0, stat.rx_sec || 0),
             upload: Math.max(0, stat.tx_sec || 0),
             total_rx: cumulativeRx,
-            total_tx: cumulativeTx
+            total_tx: cumulativeTx,
+            daily_rx: dailyRx,
+            daily_tx: dailyTx
           });
         }
       } else {
@@ -646,7 +699,8 @@ ipcMain.handle('get-config', () => {
     chartColorMode: store.get('chartColorMode', 'dynamic'),
     chartOrder: store.get('chartOrder', []),
     hiddenCharts: store.get('hiddenCharts', []),
-    autoResize: store.get('autoResize', true)
+    autoResize: store.get('autoResize', true),
+    dailyResetTime: store.get('dailyResetTime', '00:00')
   };
 });
 

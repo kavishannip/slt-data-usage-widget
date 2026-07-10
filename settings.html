@@ -249,6 +249,12 @@
         </label>
       </div>
 
+      <div class="settings-group-title">Daily Device Tracking</div>
+      <div class="settings-section">
+        <label>Daily Reset Time</label>
+        <input type="time" id="daily-reset-time-input" value="00:00" style="width: 120px;" />
+      </div>
+
       <div class="settings-group-title">Alerts</div>
       <div class="settings-section">
         <label>Low Data Notifications</label>
@@ -315,6 +321,7 @@
           }
           if (config.chartMode) document.getElementById('mode-select').value = config.chartMode;
           if (config.chartColorMode) document.getElementById('chart-color-select').value = config.chartColorMode;
+          if (config.dailyResetTime) document.getElementById('daily-reset-time-input').value = config.dailyResetTime;
           
           renderHiddenCharts();
         }
@@ -392,6 +399,10 @@
         if (val < 1) val = 1;
         if (val > 99) val = 99;
         window.api.updateSetting('lowDataThresholdPercent', val);
+      });
+
+      document.getElementById('daily-reset-time-input').addEventListener('change', (e) => {
+        window.api.updateSetting('dailyResetTime', e.target.value);
       });
 
       document.getElementById('close-settings-btn').addEventListener('click', () => {

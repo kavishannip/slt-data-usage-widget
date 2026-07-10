@@ -16,7 +16,8 @@
 
 ## ✨ Features
 - **Real-Time Data Tracking**: Monitor standard, bonus, free, extra GB, and VAS data limits effortlessly.
-- **Network Speed Monitoring**: Keep a live eye on your active upload and download speeds.
+- **Daily Device Tracking**: Keep tabs on your PC's exact daily internet consumption (Download, Upload, and Total) with a customizable, auto-resetting 24-hour tracker.
+- **Network Speed Monitoring**: Keep a live eye on your active upload and download speeds, featuring a robust network interface engine that seamlessly supports Wi-Fi and ignores virtual adapters (VPNs, VMs, etc.).
 - **Beautiful Glassmorphism UI**: A stunning, modern design that blends seamlessly with your Windows desktop.
 - **Smart Alerts**: Receive system notifications when your data usage reaches low or critical thresholds.
 - **System Tray Integration**: Minimized footprint. Runs quietly in the background and can auto-launch on startup.
@@ -34,11 +35,18 @@
 Make it yours! The widget is highly customizable. Pick from various layouts (Bar charts vs. Pie charts), chart color modes, and vibrant themes like Dark, Light, Midnight Blue, Midnight Purple, Hacker Terminal, or Transparent Glass.
 
 <div align="center">
-  <img src="screenshots/3.png" width="16%" />
-  <img src="screenshots/4.png" width="16%" />
-  <img src="screenshots/5.png" width="16%" />
-  <img src="screenshots/6.png" width="16%" />
-  <img src="screenshots/7.png" width="16%" />
+  <table>
+    <tr>
+      <td><img src="screenshots/3.png" width="100%" /></td>
+      <td><img src="screenshots/4.png" width="100%" /></td>
+      <td><img src="screenshots/5.png" width="100%" /></td>
+    </tr>
+    <tr>
+      <td><img src="screenshots/6.png" width="100%" /></td>
+      <td><img src="screenshots/7.png" width="100%" /></td>
+      <td><img src="screenshots/8.png" width="100%" /></td>
+    </tr>
+  </table>
 </div>
 
 ---
@@ -46,7 +54,7 @@ Make it yours! The widget is highly customizable. Pick from various layouts (Bar
 ## 🚀 Installation Guide
 
 1. Go to the **Releases** tab on this repository.
-2. Download the latest `SLTDU Widget Setup 1.0.0.exe` installer file.
+2. Download the latest `SLTDU Widget Setup 1.1.0.exe` installer file.
 3. Double-click the `.exe` file to start the installation.
 4. Follow the on-screen instructions to install the app.
 5. Once installed, launch the **SLTDU Widget** from your desktop shortcut or Windows Start menu!

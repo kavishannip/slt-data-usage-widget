@@ -674,9 +674,9 @@
         
         const step = width / (MAX_HISTORY - 1);
         
-        // Upload (Green)
+        // Upload (Amber)
         ctx.beginPath();
-        ctx.strokeStyle = '#10b981';
+        ctx.strokeStyle = '#f59e0b';
         ctx.lineWidth = 1.5;
         networkHistory.forEach((d, i) => {
           const x = width - ((networkHistory.length - 1 - i) * step);
@@ -686,9 +686,9 @@
         });
         ctx.stroke();
         
-        // Download (Blue)
+        // Download (Green)
         ctx.beginPath();
-        ctx.strokeStyle = '#3b82f6';
+        ctx.strokeStyle = '#10b981';
         ctx.lineWidth = 1.5;
         networkHistory.forEach((d, i) => {
           const x = width - ((networkHistory.length - 1 - i) * step);
@@ -947,8 +947,8 @@
               <span class="card-title">${name}</span>
             </div>
             <div class="network-stats" style="display:flex; justify-content:space-between; font-size:10px; color:var(--text-muted); font-family:monospace;">
-              <div><span style="color:#10b981">▲</span> <span id="upload-speed">0 B/s</span></div>
-              <div><span style="color:#3b82f6">▼</span> <span id="download-speed">0 B/s</span></div>
+              <div><span style="color:var(--color-green)">▼</span> <span id="download-speed">${formatSpeed(lastNetworkStats.download || 0)}</span></div>
+              <div><span style="color:var(--color-amber)">▲</span> <span id="upload-speed">${formatSpeed(lastNetworkStats.upload || 0)}</span></div>
             </div>
             <canvas class="network-chart-canvas" height="30" style="width:100%; display:block; margin-top:2px;"></canvas>
           `;
@@ -1027,7 +1027,7 @@
           container.appendChild(createCard(d));
         });
         
-
+        // Immediately render chart to avoid 1-second delay
         renderNetworkChart();
         
         if (appConfig.autoResize !== false) {

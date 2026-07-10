@@ -1,6 +1,6 @@
 {
   "name": "sltdu-widget",
-  "version": "1.1.1",
+  "version": "1.2.0",
   "description": "SLTDU Widget — SLT Data Usage Desktop Widget",
   "main": "main.js",
   "scripts": {

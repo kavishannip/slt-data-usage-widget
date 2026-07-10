@@ -648,6 +648,12 @@
         return tb.toFixed(2) + ' TB';
       };
       
+      const dataThemes = {
+        'default': { down: '#10b981', up: '#f59e0b', total: '#3b82f6' },
+        'classic': { down: '#3b82f6', up: '#f59e0b', total: '#10b981' },
+        'neon': { down: '#06b6d4', up: '#ec4899', total: '#a855f7' }
+      };
+      
       const networkHistory = [];
       const MAX_HISTORY = 60;
       
@@ -673,10 +679,11 @@
         });
         
         const step = width / (MAX_HISTORY - 1);
+        const dtTheme = dataThemes[appConfig.dataTrackTheme] || dataThemes['default'];
         
-        // Upload (Amber)
+        // Upload
         ctx.beginPath();
-        ctx.strokeStyle = '#f59e0b';
+        ctx.strokeStyle = dtTheme.up;
         ctx.lineWidth = 1.5;
         networkHistory.forEach((d, i) => {
           const x = width - ((networkHistory.length - 1 - i) * step);
@@ -686,9 +693,9 @@
         });
         ctx.stroke();
         
-        // Download (Green)
+        // Download
         ctx.beginPath();
-        ctx.strokeStyle = '#10b981';
+        ctx.strokeStyle = dtTheme.down;
         ctx.lineWidth = 1.5;
         networkHistory.forEach((d, i) => {
           const x = width - ((networkHistory.length - 1 - i) * step);
@@ -916,6 +923,7 @@
             };
           }, 0);
         } else if (type === 'daily_device') {
+          const dtTheme = dataThemes[appConfig.dataTrackTheme] || dataThemes['default'];
           card.innerHTML = `
             <button class="hide-btn" title="Hide">✕</button>
             <div class="card-header" style="margin-bottom: 6px;">
@@ -925,30 +933,31 @@
               <div style="display:flex; justify-content:space-between; align-items:center;">
                 <span style="color:var(--text-muted); font-size:11px;">Total Consumption</span>
                 <span style="font-size:16px; font-weight:bold; font-family:monospace;">
-                  <span style="color:var(--color-blue); font-size:14px; margin-right:4px;">⬍</span><span id="daily-total">${formatBytesBig((lastNetworkStats.daily_rx || 0) + (lastNetworkStats.daily_tx || 0))}</span>
+                  <span style="color:${dtTheme.total}; font-size:14px; margin-right:4px;">⬍</span><span id="daily-total">${formatBytesBig((lastNetworkStats.daily_rx || 0) + (lastNetworkStats.daily_tx || 0))}</span>
                 </span>
               </div>
               <div style="display:flex; justify-content:space-between; font-size:12px; font-family:monospace; margin-top:2px;">
                 <div style="display:flex; align-items:center; gap:4px;">
-                  <span style="color:var(--color-green)">▼</span>
+                  <span style="color:${dtTheme.down}">▼</span>
                   <span id="daily-download" style="font-weight:600;">${formatBytesBig(lastNetworkStats.daily_rx || 0)}</span>
                 </div>
                 <div style="display:flex; align-items:center; gap:4px;">
-                  <span style="color:var(--color-amber)">▲</span>
+                  <span style="color:${dtTheme.up}">▲</span>
                   <span id="daily-upload" style="font-weight:600;">${formatBytesBig(lastNetworkStats.daily_tx || 0)}</span>
                 </div>
               </div>
             </div>
           `;
         } else if (type === 'network') {
+          const dtTheme = dataThemes[appConfig.dataTrackTheme] || dataThemes['default'];
           card.innerHTML = `
             <button class="hide-btn" title="Hide">✕</button>
             <div class="card-header" style="margin-bottom: 2px;">
               <span class="card-title">${name}</span>
             </div>
             <div class="network-stats" style="display:flex; justify-content:space-between; font-size:10px; color:var(--text-muted); font-family:monospace;">
-              <div><span style="color:var(--color-green)">▼</span> <span id="download-speed">${formatSpeed(lastNetworkStats.download || 0)}</span></div>
-              <div><span style="color:var(--color-amber)">▲</span> <span id="upload-speed">${formatSpeed(lastNetworkStats.upload || 0)}</span></div>
+              <div><span style="color:${dtTheme.down}">▼</span> <span id="download-speed">${formatSpeed(lastNetworkStats.download || 0)}</span></div>
+              <div><span style="color:${dtTheme.up}">▲</span> <span id="upload-speed">${formatSpeed(lastNetworkStats.upload || 0)}</span></div>
             </div>
             <canvas class="network-chart-canvas" height="30" style="width:100%; display:block; margin-top:2px;"></canvas>
           `;

@@ -24,7 +24,7 @@ function initLogger() {
     } catch (_) {}
     debugLog('=== SLTDU Widget started ===');
     debugLog(`Platform: ${os.platform()} ${os.release()} | Arch: ${os.arch()}`);
-    debugLog(`App version: 1.1.1 | Electron: ${process.versions.electron}`);
+    debugLog(`App version: 1.2.0 | Electron: ${process.versions.electron}`);
     debugLog(`Log file: ${logFilePath}`);
   } catch (e) {
     console.error('Failed to init logger:', e);
@@ -700,7 +700,8 @@ ipcMain.handle('get-config', () => {
     chartOrder: store.get('chartOrder', []),
     hiddenCharts: store.get('hiddenCharts', []),
     autoResize: store.get('autoResize', true),
-    dailyResetTime: store.get('dailyResetTime', '00:00')
+    dailyResetTime: store.get('dailyResetTime', '00:00'),
+    dataTrackTheme: store.get('dataTrackTheme', 'default')
   };
 });
 

@@ -1,10 +1,45 @@
 const { app, BrowserWindow, ipcMain, screen, Notification, Tray, Menu, shell } = require('electron');
 const path = require('path');
+const fs = require('fs');
+const os = require('os');
 const Store = require('electron-store');
 const AutoLaunch = require('auto-launch');
 
 const store = new Store();
 const si = require('systeminformation');
+
+// ─── Debug Logger ───────────────────────────────────────────────
+const DEBUG = true; // Set to false for production builds
+let logFilePath = null;
+
+function initLogger() {
+  try {
+    const logDir = path.join(app.getPath('userData'), 'logs');
+    if (!fs.existsSync(logDir)) fs.mkdirSync(logDir, { recursive: true });
+    logFilePath = path.join(logDir, 'debug.log');
+    // Rotate: truncate if > 2MB
+    try {
+      const stat = fs.statSync(logFilePath);
+      if (stat.size > 2 * 1024 * 1024) fs.writeFileSync(logFilePath, '');
+    } catch (_) {}
+    debugLog('=== SLTDU Widget started ===');
+    debugLog(`Platform: ${os.platform()} ${os.release()} | Arch: ${os.arch()}`);
+    debugLog(`App version: 1.1.0 | Electron: ${process.versions.electron}`);
+    debugLog(`Log file: ${logFilePath}`);
+  } catch (e) {
+    console.error('Failed to init logger:', e);
+  }
+}
+
+function debugLog(...args) {
+  if (!DEBUG) return;
+  const timestamp = new Date().toISOString();
+  const msg = `[${timestamp}] ${args.map(a => (typeof a === 'object' ? JSON.stringify(a, null, 2) : a)).join(' ')}`;
+  console.log(msg);
+  if (logFilePath) {
+    try { fs.appendFileSync(logFilePath, msg + '\n'); } catch (_) {}
+  }
+}
 
 let mainWindow;
 let tokenWindow;
@@ -80,36 +115,148 @@ function loadConfig() {
 
 function updateAutoLaunch() {
   if (config.autoLaunch) {
-    sltAutoLauncher.enable().catch(() => {});
+    sltAutoLauncher.enable().catch((e) => { debugLog('AutoLaunch enable error:', e.message); });
   } else {
-    sltAutoLauncher.disable().catch(() => {});
+    sltAutoLauncher.disable().catch((e) => { debugLog('AutoLaunch disable error:', e.message); });
   }
 }
 
 let networkInterval;
+let cumulativeRx = 0;
+let cumulativeTx = 0;
+let prevRxBytes = null;
+let prevTxBytes = null;
+
+// Known virtual adapter keywords to exclude
+const VIRTUAL_ADAPTER_PATTERNS = [
+  'hyper-v', 'virtualbox', 'vmware', 'vmnet', 'docker',
+  'vethernet', 'veth', 'wsl', 'loopback', 'bluetooth',
+  'pan network', 'vpn', 'tunnel', 'teredo', 'isatap',
+  'pseudo', 'microsoft wi-fi direct'
+];
+
+function isVirtualAdapter(iface) {
+  const name = ((iface.iface || '') + ' ' + (iface.ifaceName || '')).toLowerCase();
+  const type = (iface.type || '').toLowerCase();
+  if (iface.virtual) return true;
+  if (type === 'virtual') return true;
+  return VIRTUAL_ADAPTER_PATTERNS.some(p => name.includes(p));
+}
+
+function findBestInterface(ifaces) {
+  // Filter to physical, non-internal, non-virtual adapters
+  const physical = ifaces.filter(i => !i.internal && !isVirtualAdapter(i));
+
+  // Priority 1: operstate 'up' AND has an IPv4 address (best case)
+  const upWithIp = physical.find(i => i.operstate === 'up' && i.ip4 && i.ip4 !== '');
+  if (upWithIp) return upWithIp;
+
+  // Priority 2: has IPv4 address regardless of operstate (handles WiFi 'unknown' quirk)
+  const withIp = physical.find(i => i.ip4 && i.ip4 !== '' && i.ip4 !== '0.0.0.0');
+  if (withIp) return withIp;
+
+  // Priority 3: operstate 'up' even without ip4 (interface is active but maybe DHCP pending)
+  const up = physical.find(i => i.operstate === 'up');
+  if (up) return up;
+
+  // Priority 4: any physical non-internal adapter at all
+  if (physical.length > 0) return physical[0];
+
+  return null;
+}
+
+async function dumpInterfacesOnce() {
+  try {
+    const ifaces = await si.networkInterfaces();
+    debugLog('=== Network Interfaces Dump ===');
+    ifaces.forEach((iface, idx) => {
+      debugLog(`  [${idx}] iface=${iface.iface} ifaceName=${iface.ifaceName || 'N/A'} ` +
+        `internal=${iface.internal} virtual=${iface.virtual || false} ` +
+        `type=${iface.type || 'N/A'} operstate=${iface.operstate} ` +
+        `ip4=${iface.ip4 || 'none'} mac=${iface.mac || 'N/A'} ` +
+        `isVirtual=${isVirtualAdapter(iface)}`);
+    });
+    const best = findBestInterface(ifaces);
+    debugLog(`  → Selected interface: ${best ? best.iface : 'NONE (will use *)'} ` +
+      `(operstate=${best ? best.operstate : 'N/A'})`);
+    debugLog('=== End Interfaces Dump ===');
+  } catch (e) {
+    debugLog('Interface dump error:', e.message);
+  }
+}
+
 function startNetworkPolling() {
   if (networkInterval) clearInterval(networkInterval);
-  si.networkInterfaces().then(ifaces => {
-    const active = ifaces.find(i => !i.internal && i.operstate === 'up');
-    const defaultIface = active ? active.iface : '*';
-    
-    networkInterval = setInterval(async () => {
-      try {
-        const stats = await si.networkStats(defaultIface);
-        if (stats && stats.length > 0) {
-          const stat = stats[0];
-          if (mainWindow && !mainWindow.isDestroyed()) {
-            mainWindow.webContents.send('network-stats', {
-              download: Math.max(0, stat.rx_sec || 0),
-              upload: Math.max(0, stat.tx_sec || 0),
-              total_rx: stat.rx_bytes || 0,
-              total_tx: stat.tx_bytes || 0
-            });
-          }
+  let lastIface = null;
+  let pollCount = 0;
+
+  networkInterval = setInterval(async () => {
+    try {
+      const ifaces = await si.networkInterfaces();
+      const best = findBestInterface(ifaces);
+      const currentIface = best ? best.iface : null;
+
+      // Log interface changes and periodic status
+      if (currentIface !== lastIface) {
+        debugLog(`[Network] Interface changed: ${lastIface} → ${currentIface}` +
+          (best ? ` (operstate=${best.operstate}, ip4=${best.ip4})` : ' (no suitable interface)'));
+        // Reset byte tracking on interface change to avoid wrong deltas
+        prevRxBytes = null;
+        prevTxBytes = null;
+        lastIface = currentIface;
+      }
+
+      // Log every 60 seconds for debugging
+      pollCount++;
+      if (pollCount % 60 === 0) {
+        debugLog(`[Network] Poll #${pollCount}: iface=${currentIface}, ` +
+          `cumulativeRx=${(cumulativeRx / (1024*1024)).toFixed(2)}MB, ` +
+          `cumulativeTx=${(cumulativeTx / (1024*1024)).toFixed(2)}MB`);
+      }
+
+      if (!currentIface) {
+        // No physical interface found — send zeros so the UI stays alive
+        if (mainWindow && !mainWindow.isDestroyed()) {
+          mainWindow.webContents.send('network-stats', {
+            download: 0, upload: 0,
+            total_rx: cumulativeRx, total_tx: cumulativeTx
+          });
         }
-      } catch (e) {}
-    }, 1000);
-  }).catch(() => {});
+        return;
+      }
+
+      const stats = await si.networkStats(currentIface);
+      if (stats && stats.length > 0) {
+        const stat = stats[0];
+        const rxBytes = stat.rx_bytes || 0;
+        const txBytes = stat.tx_bytes || 0;
+
+        if (prevRxBytes !== null) {
+          // Accumulate deltas; handle OS counter resets gracefully
+          const deltaRx = rxBytes >= prevRxBytes ? rxBytes - prevRxBytes : rxBytes;
+          const deltaTx = txBytes >= prevTxBytes ? txBytes - prevTxBytes : txBytes;
+          // Sanity: ignore unreasonably large deltas (> 100MB in 1s = likely counter reset)
+          if (deltaRx < 100 * 1024 * 1024) cumulativeRx += deltaRx;
+          if (deltaTx < 100 * 1024 * 1024) cumulativeTx += deltaTx;
+        }
+        prevRxBytes = rxBytes;
+        prevTxBytes = txBytes;
+
+        if (mainWindow && !mainWindow.isDestroyed()) {
+          mainWindow.webContents.send('network-stats', {
+            download: Math.max(0, stat.rx_sec || 0),
+            upload: Math.max(0, stat.tx_sec || 0),
+            total_rx: cumulativeRx,
+            total_tx: cumulativeTx
+          });
+        }
+      } else {
+        debugLog(`[Network] si.networkStats('${currentIface}') returned empty`);
+      }
+    } catch (e) {
+      debugLog('[Network] Polling error:', e.message);
+    }
+  }, 1000);
 }
 
 function checkAlerts(category, usageData) {
@@ -326,6 +473,13 @@ function createWindow() {
 
   mainWindow.setVisibleOnAllWorkspaces(true);
   mainWindow.loadFile('index.html');
+
+  // ── Temporarily enable DevTools for debugging (remove for production) ──
+  if (DEBUG) {
+    mainWindow.webContents.on('did-finish-load', () => {
+      mainWindow.webContents.openDevTools({ mode: 'detach' });
+    });
+  }
   
   mainWindow.on('resize', () => {
     if (!isProgrammaticResize) {
@@ -384,7 +538,7 @@ function openTokenWindow() {
         if (urlObj.searchParams.has('subscriberID')) {
           subscriberID = urlObj.searchParams.get('subscriberID');
         }
-      } catch (e) {}
+      } catch (e) { debugLog('Token URL parse error:', e.message); }
 
       if (subscriberID) {
         store.set('subscriberID', subscriberID);
@@ -428,8 +582,11 @@ if (!gotTheLock) {
   });
 
   app.whenReady().then(() => {
+    initLogger();
+    debugLog('App ready. Creating window...');
     createWindow();
     createTray();
+    dumpInterfacesOnce(); // Dump all interfaces to log for debugging
     startNetworkPolling();
 
     app.on('activate', () => {

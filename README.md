@@ -54,7 +54,7 @@ Make it yours! The widget is highly customizable. Pick from various layouts (Bar
 ## 🚀 Installation Guide
 
 1. Go to the **Releases** tab on this repository.
-2. Download the latest `SLTDU Widget Setup 1.1.0.exe` installer file.
+2. Download the latest `SLTDU Widget Setup 1.1.1.exe` installer file.
 3. Double-click the `.exe` file to start the installation.
 4. Follow the on-screen instructions to install the app.
 5. Once installed, launch the **SLTDU Widget** from your desktop shortcut or Windows Start menu!

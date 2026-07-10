@@ -24,7 +24,7 @@ function initLogger() {
     } catch (_) {}
     debugLog('=== SLTDU Widget started ===');
     debugLog(`Platform: ${os.platform()} ${os.release()} | Arch: ${os.arch()}`);
-    debugLog(`App version: 1.1.0 | Electron: ${process.versions.electron}`);
+    debugLog(`App version: 1.1.1 | Electron: ${process.versions.electron}`);
     debugLog(`Log file: ${logFilePath}`);
   } catch (e) {
     console.error('Failed to init logger:', e);

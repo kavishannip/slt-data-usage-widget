@@ -17,5 +17,13 @@ contextBridge.exposeInMainWorld('api', {
   onNetworkStats: (callback) => ipcRenderer.on('network-stats', (_event, data) => callback(data)),
   closeApp: () => ipcRenderer.send('close-app'),
   showNotification: (options) => ipcRenderer.send('show-notification', options),
-  onFetchError: (callback) => ipcRenderer.on('fetch-error', (_event, data) => callback(data))
+  onFetchError: (callback) => ipcRenderer.on('fetch-error', (_event, data) => callback(data)),
+  checkForUpdates: () => ipcRenderer.send('check-for-updates'),
+  downloadUpdate: () => ipcRenderer.send('download-and-install-update'),
+  installUpdate: () => ipcRenderer.send('install-update'),
+  onUpdateAvailable: (callback) => ipcRenderer.on('update-available', (_event, info) => callback(info)),
+  onUpdateNotAvailable: (callback) => ipcRenderer.on('update-not-available', (_event, info) => callback(info)),
+  onUpdateDownloaded: (callback) => ipcRenderer.on('update-downloaded', (_event, info) => callback(info)),
+  onUpdateError: (callback) => ipcRenderer.on('update-error', (_event, err) => callback(err)),
+  onDownloadProgress: (callback) => ipcRenderer.on('download-progress', (_event, prog) => callback(prog))
 });

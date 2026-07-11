@@ -258,6 +258,14 @@
         </label>
       </div>
 
+      <div class="settings-section">
+        <label>Auto-Check for Updates</label>
+        <label class="switch">
+          <input type="checkbox" id="autoupdate-toggle" checked />
+          <span class="slider"></span>
+        </label>
+      </div>
+
       <div class="settings-group-title">Daily Device Tracking</div>
       <div class="settings-section">
         <label>Daily Reset Time</label>
@@ -298,10 +306,19 @@
         </div>
       </div>
       
+      <div class="settings-divider"></div>
+      
+      <div class="settings-group-title">Updates</div>
+      <div style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px;">
+        <button id="update-action-btn" class="logout-btn" style="background: rgba(56, 189, 248, 0.2); border-color: rgba(56, 189, 248, 0.4); color: #7dd3fc;">Check for Updates</button>
+        <div id="update-status-text" style="font-size: 10px; color: var(--text-muted); text-align: center; display: none;"></div>
+        <a id="release-notes-link" href="#" style="font-size: 10px; color: #38bdf8; text-align: center; display: none; text-decoration: none;">Release Notes</a>
+      </div>
+      
       <button class="logout-btn" id="logout-btn">Log Out</button>
       
       <div style="margin-top: 16px; display: flex; justify-content: space-between; align-items: center; width: 100%; color: var(--text-muted); font-size: 9px;">
-        <span>v1.2.1</span>
+        <span>v1.3.0</span>
         <a href="#" id="github-link" style="color: var(--text-muted); text-decoration: none; display: flex; align-items: center; gap: 4px;">
           <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
           GitHub
@@ -321,6 +338,7 @@
           document.getElementById('refresh-input').value = config.refreshMinutes || 1;
           document.getElementById('ontop-toggle').checked = config.alwaysOnTop !== false;
           document.getElementById('autoresize-toggle').checked = config.autoResize !== false;
+          document.getElementById('autoupdate-toggle').checked = config.autoUpdate !== false;
           document.getElementById('notify-low-toggle').checked = config.notifyOnLowData !== false;
           document.getElementById('threshold-input').value = config.lowDataThresholdPercent || 20;
           
@@ -418,6 +436,126 @@
       document.getElementById('daily-reset-time-input').addEventListener('change', (e) => {
         window.api.updateSetting('dailyResetTime', e.target.value);
       });
+
+      document.getElementById('autoupdate-toggle').addEventListener('change', (e) => {
+        window.api.updateSetting('autoUpdate', e.target.checked);
+      });
+
+      // --- Updater Logic ---
+      let currentUpdateState = 'idle';
+      let updateInfo = null;
+
+      function updateUpdateUIState() {
+        const btn = document.getElementById('update-action-btn');
+        const statusText = document.getElementById('update-status-text');
+        const notesLink = document.getElementById('release-notes-link');
+        
+        btn.style.display = 'block';
+        notesLink.style.display = 'none';
+        
+        if (currentUpdateState === 'idle') {
+          btn.innerText = 'Check for Updates';
+          btn.style.background = 'rgba(56, 189, 248, 0.2)';
+          btn.style.borderColor = 'rgba(56, 189, 248, 0.4)';
+          btn.style.color = '#7dd3fc';
+          statusText.style.display = 'none';
+        } else if (currentUpdateState === 'checking') {
+          btn.innerText = 'Checking...';
+          statusText.style.display = 'block';
+          statusText.style.color = 'var(--text-muted)';
+          statusText.innerText = 'Looking for new releases...';
+        } else if (currentUpdateState === 'available') {
+          btn.innerText = `Update to ${updateInfo.version}`;
+          btn.style.background = 'rgba(16, 185, 129, 0.2)';
+          btn.style.borderColor = 'rgba(16, 185, 129, 0.4)';
+          btn.style.color = '#6ee7b7';
+          
+          let sizeStr = '';
+          if (updateInfo.files && updateInfo.files.length > 0 && updateInfo.files[0].size) {
+            sizeStr = ` (${(updateInfo.files[0].size / (1024*1024)).toFixed(1)} MB)`;
+          }
+          
+          statusText.style.display = 'block';
+          statusText.style.color = 'var(--text-muted)';
+          statusText.innerText = `New version available${sizeStr}`;
+          
+          notesLink.style.display = 'block';
+        } else if (currentUpdateState === 'downloading') {
+          btn.innerText = 'Downloading...';
+          statusText.style.display = 'block';
+          statusText.style.color = 'var(--text-muted)';
+        } else if (currentUpdateState === 'downloaded') {
+          btn.innerText = 'Install Update';
+          statusText.style.display = 'block';
+          statusText.style.color = 'var(--text-muted)';
+          statusText.innerText = 'Ready to install. App will restart.';
+        }
+      }
+
+      document.getElementById('update-action-btn').addEventListener('click', () => {
+        if (currentUpdateState === 'idle') {
+          currentUpdateState = 'checking';
+          updateUpdateUIState();
+          window.api.checkForUpdates();
+        } else if (currentUpdateState === 'available') {
+          currentUpdateState = 'downloading';
+          updateUpdateUIState();
+          window.api.downloadUpdate();
+        } else if (currentUpdateState === 'downloaded') {
+          window.api.installUpdate();
+        }
+      });
+      
+      document.getElementById('release-notes-link').addEventListener('click', (e) => {
+        e.preventDefault();
+        if (updateInfo && updateInfo.version) {
+          window.api.openExternal(`https://github.com/kavishannip/slt-data-usage-widget/releases/tag/v${updateInfo.version}`);
+        }
+      });
+
+      if (window.api.onUpdateAvailable) {
+        window.api.onUpdateAvailable((info) => {
+          updateInfo = info;
+          currentUpdateState = 'available';
+          updateUpdateUIState();
+        });
+
+        window.api.onUpdateNotAvailable(() => {
+          currentUpdateState = 'idle';
+          updateUpdateUIState();
+          const statusText = document.getElementById('update-status-text');
+          statusText.style.display = 'block';
+          statusText.style.color = 'var(--text-muted)';
+          statusText.innerText = 'You are on the latest version.';
+          setTimeout(() => { if (currentUpdateState === 'idle') statusText.style.display = 'none'; }, 3000);
+        });
+
+        window.api.onDownloadProgress((prog) => {
+          const statusText = document.getElementById('update-status-text');
+          statusText.style.display = 'block';
+          statusText.innerText = `Downloading: ${Math.round(prog.percent)}%`;
+        });
+
+        window.api.onUpdateDownloaded(() => {
+          currentUpdateState = 'downloaded';
+          updateUpdateUIState();
+        });
+
+        window.api.onUpdateError((err) => {
+          currentUpdateState = 'idle';
+          updateUpdateUIState();
+          const statusText = document.getElementById('update-status-text');
+          statusText.style.display = 'block';
+          statusText.style.color = 'var(--color-red)';
+          statusText.innerText = 'Error checking for updates.';
+          setTimeout(() => { 
+            if (currentUpdateState === 'idle') {
+              statusText.style.display = 'none';
+              statusText.style.color = 'var(--text-muted)';
+            }
+          }, 3000);
+        });
+      }
 
       document.getElementById('close-settings-btn').addEventListener('click', () => {
         window.api.closeSettings();

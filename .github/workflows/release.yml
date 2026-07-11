@@ -23,23 +23,7 @@ jobs:
       - name: Install Dependencies
         run: npm install
 
-      - name: Build Application
-        run: npm run build -- -p never
-
-      - name: Extract Version
-        id: version
-        shell: bash
-        run: |
-          VERSION=$(node -p "require('./package.json').version")
-          echo "VERSION=$VERSION" >> $GITHUB_ENV
-
-      - name: Create Draft Release
-        uses: softprops/action-gh-release@v1
-        with:
-          tag_name: v${{ env.VERSION }}
-          name: SLTDU Widget v${{ env.VERSION }}
-          draft: true
-          prerelease: false
-          files: dist/SLTDU Widget Setup ${{ env.VERSION }}.exe
+      - name: Build and Publish Application
+        run: npm run build -- -p always
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

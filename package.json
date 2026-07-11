@@ -1,6 +1,6 @@
 {
   "name": "sltdu-widget",
-  "version": "1.2.1",
+  "version": "1.3.0",
   "description": "SLTDU Widget — SLT Data Usage Desktop Widget",
   "main": "main.js",
   "scripts": {
@@ -10,6 +10,13 @@
   "build": {
     "appId": "com.slt.usagewidget",
     "productName": "SLTDU Widget",
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "kavishannip",
+        "repo": "slt-data-usage-widget"
+      }
+    ],
     "win": {
       "target": "nsis",
       "icon": "build/icon.ico"
@@ -34,6 +41,7 @@
   "dependencies": {
     "auto-launch": "^5.0.6",
     "electron-store": "^8.2.0",
+    "electron-updater": "^6.8.9",
     "systeminformation": "^5.31.15"
   }
 }

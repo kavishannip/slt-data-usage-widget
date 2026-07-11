@@ -71,6 +71,36 @@
         --input-bg: rgba(0, 40, 0, 0.7);
       }
 
+      [data-theme="sunset"] {
+        --bg-glass: rgba(40, 10, 10, 0.75);
+        --border-glass: rgba(251, 146, 60, 0.2);
+        --text-main: #fff7ed;
+        --text-muted: #fdba74;
+        --popup-bg: rgba(40, 15, 10, 0.95);
+        --card-bg: rgba(60, 20, 10, 0.5);
+        --input-bg: rgba(80, 30, 20, 0.7);
+      }
+      
+      [data-theme="forest"] {
+        --bg-glass: rgba(10, 30, 15, 0.75);
+        --border-glass: rgba(74, 222, 128, 0.2);
+        --text-main: #f0fdf4;
+        --text-muted: #86efac;
+        --popup-bg: rgba(10, 35, 15, 0.95);
+        --card-bg: rgba(15, 45, 25, 0.5);
+        --input-bg: rgba(20, 60, 35, 0.7);
+      }
+      
+      [data-theme="ocean"] {
+        --bg-glass: rgba(10, 25, 40, 0.75);
+        --border-glass: rgba(45, 212, 191, 0.2);
+        --text-main: #f0fdfa;
+        --text-muted: #5eead4;
+        --popup-bg: rgba(10, 30, 45, 0.95);
+        --card-bg: rgba(15, 40, 60, 0.5);
+        --input-bg: rgba(20, 50, 75, 0.7);
+      }
+
       * { box-sizing: border-box; margin: 0; padding: 0; }
 
       body {
@@ -204,6 +234,9 @@
           <option value="purple">Midnight Purple</option>
           <option value="transparent">Transparent Glass</option>
           <option value="hacker">Hacker Terminal</option>
+          <option value="sunset">Sunset Orange</option>
+          <option value="forest">Forest Green</option>
+          <option value="ocean">Deep Ocean</option>
         </select>
       </div>
       
@@ -216,6 +249,9 @@
           <option value="purple">Solid Purple</option>
           <option value="orange">Solid Orange</option>
           <option value="cyan">Solid Cyan</option>
+          <option value="pink">Solid Pink</option>
+          <option value="yellow">Solid Yellow</option>
+          <option value="red">Solid Red</option>
         </select>
       </div>
 
@@ -225,6 +261,9 @@
           <option value="default">Green & Yellow</option>
           <option value="classic">Blue & Yellow</option>
           <option value="neon">Neon (Cyan & Pink)</option>
+          <option value="cyberpunk">Cyberpunk</option>
+          <option value="monochrome">Monochrome</option>
+          <option value="candy">Candy</option>
         </select>
       </div>
       
@@ -318,7 +357,7 @@
       <button class="logout-btn" id="logout-btn">Log Out</button>
       
       <div style="margin-top: 16px; display: flex; justify-content: space-between; align-items: center; width: 100%; color: var(--text-muted); font-size: 9px;">
-        <span>v1.3.0</span>
+        <span>v1.4.0</span>
         <a href="#" id="github-link" style="color: var(--text-muted); text-decoration: none; display: flex; align-items: center; gap: 4px;">
           <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
           GitHub

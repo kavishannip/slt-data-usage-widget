@@ -73,6 +73,36 @@
         --input-bg: rgba(0, 40, 0, 0.7);
       }
 
+      [data-theme="sunset"] {
+        --bg-glass: rgba(40, 10, 10, 0.75);
+        --border-glass: rgba(251, 146, 60, 0.2);
+        --text-main: #fff7ed;
+        --text-muted: #fdba74;
+        --popup-bg: rgba(40, 15, 10, 0.95);
+        --card-bg: rgba(60, 20, 10, 0.5);
+        --input-bg: rgba(80, 30, 20, 0.7);
+      }
+      
+      [data-theme="forest"] {
+        --bg-glass: rgba(10, 30, 15, 0.75);
+        --border-glass: rgba(74, 222, 128, 0.2);
+        --text-main: #f0fdf4;
+        --text-muted: #86efac;
+        --popup-bg: rgba(10, 35, 15, 0.95);
+        --card-bg: rgba(15, 45, 25, 0.5);
+        --input-bg: rgba(20, 60, 35, 0.7);
+      }
+      
+      [data-theme="ocean"] {
+        --bg-glass: rgba(10, 25, 40, 0.75);
+        --border-glass: rgba(45, 212, 191, 0.2);
+        --text-main: #f0fdfa;
+        --text-muted: #5eead4;
+        --popup-bg: rgba(10, 30, 45, 0.95);
+        --card-bg: rgba(15, 40, 60, 0.5);
+        --input-bg: rgba(20, 50, 75, 0.7);
+      }
+
       * {
         box-sizing: border-box;
         margin: 0;
@@ -591,6 +621,9 @@
         if (mode === 'purple') return "#a855f7";
         if (mode === 'orange') return "#f97316";
         if (mode === 'cyan') return "#06b6d4";
+        if (mode === 'pink') return "#ec4899";
+        if (mode === 'yellow') return "#eab308";
+        if (mode === 'red') return "#ef4444";
         
         if (percent > 40) return "var(--color-green)";
         if (percent > 15) return "var(--color-amber)";
@@ -651,7 +684,10 @@
       const dataThemes = {
         'default': { down: '#10b981', up: '#f59e0b', total: '#3b82f6' },
         'classic': { down: '#3b82f6', up: '#f59e0b', total: '#10b981' },
-        'neon': { down: '#06b6d4', up: '#ec4899', total: '#a855f7' }
+        'neon': { down: '#06b6d4', up: '#ec4899', total: '#a855f7' },
+        'cyberpunk': { down: '#eab308', up: '#a855f7', total: '#ef4444' },
+        'monochrome': { down: '#ffffff', up: '#9ca3af', total: '#d1d5db' },
+        'candy': { down: '#ec4899', up: '#06b6d4', total: '#f472b6' }
       };
       
       const networkHistory = [];

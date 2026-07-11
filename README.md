@@ -15,6 +15,7 @@
 </div>
 
 ## ✨ Features
+
 - **Real-Time Data Tracking**: Monitor standard, bonus, free, extra GB, and VAS data limits effortlessly.
 - **Daily Device Tracking**: Keep tabs on your PC's exact daily internet consumption (Download, Upload, and Total) with a customizable, auto-resetting 24-hour tracker.
 - **Network Speed Monitoring**: Keep a live eye on your active upload and download speeds, featuring a robust network interface engine that seamlessly supports Wi-Fi and ignores virtual adapters (VPNs, VMs, etc.).
@@ -54,7 +55,7 @@ Make it yours! The widget is highly customizable. Pick from various layouts (Bar
 ## 🚀 Installation Guide
 
 1. Go to the **Releases** tab on this repository.
-2. Download the latest `SLTDU Widget Setup 1.2.1.exe` installer file.
+2. Download the latest `SLTDU Widget Setup 1.4.0.exe` installer file.
 3. Double-click the `.exe` file to start the installation.
 4. Follow the on-screen instructions to install the app.
 5. Once installed, launch the **SLTDU Widget** from your desktop shortcut or Windows Start menu!
@@ -70,20 +71,23 @@ To fetch your real-time data, the widget needs to authenticate with your MySLT a
 </div>
 
 ### Step-by-Step Guide:
+
 1. When you open the widget for the first time (or when your session expires), an authentication window will automatically pop up.
 2. The popup will securely load the official **MySLT Portal** (`https://myslt.slt.lk/`).
 3. Log in using your standard MySLT credentials (mobile number/username and password/OTP).
 4. As soon as you log in successfully, the widget will automatically intercept your secure authentication token and subscriber ID in the background.
 5. The login window will close automatically, and your desktop widget will instantly come to life and start displaying your data!
 
-*(Privacy Note: Your login credentials are NEVER stored by the widget. It only stores the temporary session token locally to fetch your data, and all network requests are sent directly to the official SLT servers.)*
+_(Privacy Note: Your login credentials are NEVER stored by the widget. It only stores the temporary session token locally to fetch your data, and all network requests are sent directly to the official SLT servers.)_
 
 ---
 
 ## 🛠️ Technical Details
+
 - Built with **Electron** for the desktop environment.
 - Uses **Vanilla HTML/CSS/JS** for an ultra-fast, lightweight UI without bulky frameworks.
 - Communicates directly with SLT's BBVAS APIs.
 
 ## 📄 License
+
 This project is for educational and personal use.

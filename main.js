@@ -721,7 +721,8 @@ ipcMain.on('open-settings', () => {
   const theme = store.get('theme', 'dark');
   
   settingsWindow = new BrowserWindow({
-    width: 320,
+    width: 360,
+    minWidth: 360,
     height: 550,
     frame: false,
     transparent: true,

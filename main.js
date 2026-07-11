@@ -24,7 +24,7 @@ function initLogger() {
     } catch (_) {}
     debugLog('=== SLTDU Widget started ===');
     debugLog(`Platform: ${os.platform()} ${os.release()} | Arch: ${os.arch()}`);
-    debugLog(`App version: 1.2.0 | Electron: ${process.versions.electron}`);
+    debugLog(`App version: 1.2.1 | Electron: ${process.versions.electron}`);
     debugLog(`Log file: ${logFilePath}`);
   } catch (e) {
     console.error('Failed to init logger:', e);
@@ -454,7 +454,8 @@ async function fetchUsage() {
 
 function startPolling() {
   if (refreshInterval) clearInterval(refreshInterval);
-  const ms = (config.refreshMinutes || 1) * 60 * 1000;
+  const safeMinutes = Math.max(1, Math.min(60, parseFloat(config.refreshMinutes) || 1));
+  const ms = safeMinutes * 60 * 1000;
   refreshInterval = setInterval(fetchUsage, ms);
   fetchUsage(); // Initial fetch
 }
@@ -773,6 +774,9 @@ ipcMain.on('resize-window', (event, { width, height }) => {
 });
 
 ipcMain.on('update-setting', (event, { key, value }) => {
+  if (key === 'refreshMinutes') {
+    value = Math.max(1, Math.min(60, parseInt(value) || 1));
+  }
   store.set(key, value);
   loadConfig();
   

@@ -4,6 +4,7 @@ const fs = require('fs');
 const os = require('os');
 const Store = require('electron-store');
 const AutoLaunch = require('auto-launch');
+const { autoUpdater } = require('electron-updater');
 
 const store = new Store();
 const si = require('systeminformation');
@@ -113,7 +114,8 @@ function loadConfig() {
     dailyResetTime: store.get('dailyResetTime', '00:00'),
     dailyRxBytes: store.get('dailyRxBytes', 0),
     dailyTxBytes: store.get('dailyTxBytes', 0),
-    lastResetTime: store.get('lastResetTime', Date.now())
+    lastResetTime: store.get('lastResetTime', Date.now()),
+    autoUpdate: store.get('autoUpdate', true)
   };
 }
 
@@ -642,6 +644,7 @@ if (!gotTheLock) {
     createTray();
     dumpInterfacesOnce(); // Dump all interfaces to log for debugging
     startNetworkPolling();
+    setupAutoUpdate();
 
     app.on('activate', () => {
       if (BrowserWindow.getAllWindows().length === 0) {
@@ -702,7 +705,8 @@ ipcMain.handle('get-config', () => {
     hiddenCharts: store.get('hiddenCharts', []),
     autoResize: store.get('autoResize', true),
     dailyResetTime: store.get('dailyResetTime', '00:00'),
-    dataTrackTheme: store.get('dataTrackTheme', 'default')
+    dataTrackTheme: store.get('dataTrackTheme', 'default'),
+    autoUpdate: store.get('autoUpdate', true)
   };
 });
 
@@ -791,6 +795,9 @@ ipcMain.on('update-setting', (event, { key, value }) => {
   if (key === 'refreshMinutes') {
     startPolling();
   }
+  if (key === 'autoUpdate') {
+    setupAutoUpdate();
+  }
   
   if (mainWindow && !mainWindow.isDestroyed()) {
     mainWindow.webContents.send('setting-updated', { key, value });
@@ -799,3 +806,73 @@ ipcMain.on('update-setting', (event, { key, value }) => {
     settingsWindow.webContents.send('setting-updated', { key, value });
   }
 });
+
+// ─── Updater Logic ───────────────────────────────────────────────
+autoUpdater.autoDownload = false;
+autoUpdater.autoInstallOnAppQuit = true;
+
+autoUpdater.on('update-available', (info) => {
+  debugLog('Update available:', info.version);
+  if (settingsWindow && !settingsWindow.isDestroyed()) {
+    settingsWindow.webContents.send('update-available', info);
+  }
+});
+
+autoUpdater.on('update-not-available', (info) => {
+  debugLog('Update not available');
+  if (settingsWindow && !settingsWindow.isDestroyed()) {
+    settingsWindow.webContents.send('update-not-available', info);
+  }
+});
+
+autoUpdater.on('update-downloaded', (info) => {
+  debugLog('Update downloaded');
+  if (settingsWindow && !settingsWindow.isDestroyed()) {
+    settingsWindow.webContents.send('update-downloaded', info);
+  }
+});
+
+autoUpdater.on('error', (err) => {
+  debugLog('Updater error:', err.message);
+  if (settingsWindow && !settingsWindow.isDestroyed()) {
+    settingsWindow.webContents.send('update-error', err.message);
+  }
+});
+
+autoUpdater.on('download-progress', (progressObj) => {
+  if (settingsWindow && !settingsWindow.isDestroyed()) {
+    settingsWindow.webContents.send('download-progress', progressObj);
+  }
+});
+
+ipcMain.on('check-for-updates', () => {
+  debugLog('Manual check for updates triggered');
+  autoUpdater.checkForUpdates().catch(e => debugLog('Check update error:', e.message));
+});
+
+ipcMain.on('download-and-install-update', () => {
+  debugLog('Downloading update...');
+  autoUpdater.downloadUpdate().catch(e => debugLog('Download update error:', e.message));
+});
+
+ipcMain.on('install-update', () => {
+  debugLog('Installing update...');
+  autoUpdater.quitAndInstall(false, true);
+});
+
+let updateInterval = null;
+function setupAutoUpdate() {
+  if (updateInterval) clearInterval(updateInterval);
+  if (config && config.autoUpdate) {
+    debugLog('Setting up auto update checks...');
+    setTimeout(() => {
+      autoUpdater.checkForUpdates().catch(e => debugLog('Startup check update error:', e.message));
+    }, 5000); // 5 sec after launch
+    
+    updateInterval = setInterval(() => {
+      autoUpdater.checkForUpdates().catch(e => debugLog('Periodic check update error:', e.message));
+    }, 24 * 60 * 60 * 1000); // Every 24h
+  } else {
+    debugLog('Auto update is disabled.');
+  }
+}
